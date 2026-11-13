@@ -50,6 +50,18 @@ export class AudioEngine {
     return this.latest.t.clock + Math.min(0.25, (performance.now() - this.latestAt) / 1000);
   }
 
+  private tap: MediaStreamAudioDestinationNode | null = null;
+
+  /** What the speakers play, as a media stream (to record a clip); null before start(). */
+  recordStream(): MediaStream | null {
+    if (!this.ctx || !this.master) return null;
+    if (!this.tap) {
+      this.tap = this.ctx.createMediaStreamDestination();
+      this.master.connect(this.tap);
+    }
+    return this.tap.stream;
+  }
+
   get running(): boolean {
     return !!this.ctx && this.ctx.state === "running";
   }
@@ -187,6 +199,32 @@ export class AudioEngine {
 
   stopSpeech(): void {
     this.send({ type: "stopSpeech" });
+  }
+
+  /** The output's RMS over the fast analyser's window (~40 ms); 0 before start(). */
+  level(): number {
+    const a = this.analyserFast;
+    if (!a) return 0;
+    const buf = new Float32Array(a.fftSize);
+    a.getFloatTimeDomainData(buf);
+    let s = 0;
+    for (const x of buf) s += x * x;
+    return Math.sqrt(s / buf.length);
+  }
+
+  /**
+   * Resolves once the output has stayed below `floor` for `hold` s, or after `max` s: a clip
+   * mustn't open on the tail of what was sounding (a stopped song keeps ringing for a moment).
+   */
+  async quiet(floor = 0.003, hold = 0.15, max = 2): Promise<void> {
+    const t0 = performance.now();
+    let since = t0;
+    while (performance.now() - t0 < max * 1000) {
+      const t = performance.now();
+      if (this.level() >= floor) since = t;
+      else if (t - since >= hold * 1000) return;
+      await new Promise((r) => setTimeout(r, 20));
+    }
   }
 
   onReady(l: () => void): () => void {
