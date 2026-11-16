@@ -106,13 +106,6 @@ pub struct SongOptions {
     pub t0: f64,
     /// vibrato depth (cents) on held vowels
     pub vibrato: f64,
-    /// nasalise the vowel before a nasal coda for this fraction of the vowel (at most 0.25 s), as
-    /// Mandarin singers do; None or 0: the velum lowers only for the nasal itself
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub nasal_lead: Option<f64>,
-    /// sung consonant length relative to spoken (None: 0.8)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub consonant_scale: Option<f64>,
 }
 
 /// A bend's blending strength against the note's own pitch (6): it wins while it lasts.
@@ -172,9 +165,9 @@ pub fn plan_song(notes: &[SungNote], o: &SongOptions) -> Plan {
             let start = notes[k].syl.pitch.iter().find(|b| b.at == Edge::Start).map_or(0.0, |b| b.st);
             hz_of(k) * crate::math::pow(2.0, start / 12.0)
         };
-        let mut onsets: Vec<Vec<Segment>> = (i..=j).map(|k| if melisma(&notes[k].syl) { Vec::new() } else { consonants_at(&notes[k].syl.onset, o.body, o.consonant_scale.unwrap_or(0.8), onset_hz(k)) }).collect();
+        let mut onsets: Vec<Vec<Segment>> = (i..=j).map(|k| if melisma(&notes[k].syl) { Vec::new() } else { consonants_at(&notes[k].syl.onset, o.body, 0.8, onset_hz(k)) }).collect();
         let mut codas: Vec<Vec<Segment>> = (i..=j)
-            .map(|k| if k < j && melisma(&notes[k + 1].syl) { Vec::new() } else { consonants_at(&last_of_chain(notes, k).coda, o.body, o.consonant_scale.unwrap_or(0.8), hz_of(k)) })
+            .map(|k| if k < j && melisma(&notes[k + 1].syl) { Vec::new() } else { consonants_at(&last_of_chain(notes, k).coda, o.body, 0.8, hz_of(k)) })
             .collect();
         // the phrase's last vowel leaves a short breath before the next phrase. The call's last
         // phrase is followed by a rest (callers split phrases at rests), so the breath comes from
@@ -218,7 +211,7 @@ pub fn plan_song(notes: &[SungNote], o: &SongOptions) -> Plan {
             }
             if coda.first().is_some_and(|c| matches!(c.ipa.as_str(), "m" | "n" | "ŋ")) {
                 // the syllable whose coda this is decides (a melisma's coda is its parent's)
-                let lead = last_of_chain(notes, k).nasal_lead.or(o.nasal_lead).unwrap_or(0.0);
+                let lead = last_of_chain(notes, k).nasal_lead.unwrap_or(0.0);
                 if lead > 0.0 {
                     // the tongue body's rise toward -ng after the back vowel ɑ (ang, iang, uang); after
                     // other vowels, and toward -n, it measured no better or worse
