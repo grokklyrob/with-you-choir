@@ -78,9 +78,10 @@ function rms({ fs, x }: Wav, from: number, to: number): number {
   return Math.sqrt(sum / Math.max(1, b - a));
 }
 
-/** When the sound starting near `t` starts: the first sample above a tenth of the peak nearby. */
+/** When the sound starting near `t` starts: the first sample above a tenth of the peak nearby. It
+ * looks from 50 ms before: the beat's softer hit 70 ms ahead of a kick peaks right at a tenth of it. */
 function onset({ fs, x }: Wav, t: number): { at: number; peak: number } {
-  const a = Math.max(0, Math.round((t - 0.1) * fs)), b = Math.min(x.length, Math.round((t + 0.2) * fs));
+  const a = Math.max(0, Math.round((t - 0.05) * fs)), b = Math.min(x.length, Math.round((t + 0.2) * fs));
   let peak = 0;
   for (let i = a; i < b; i++) peak = Math.max(peak, Math.abs(x[i]));
   for (let i = a; i < b; i++) if (Math.abs(x[i]) >= peak / 10) return { at: i / fs, peak };
