@@ -91,8 +91,9 @@ data, `tools/build-mandarin.ts`), longest phrase first: 银行 is yín háng, �
 syllable) or numbers (`ni3 hao3`, `de5`); apostrophes split syllables (`Xī'ān`), and `ü` or `v` both
 work. Third-tone sandhi applies inside a word. Pinyin claims only a word written as pinyin is:
 - every syllable real, and a vowel-initial one inside the word after an apostrophe (`Xī'ān`);
-- the first syllable's tone written; an unwritten one later is neutral, at the end (`dōngxi`) or as
-  bu, de, yi inside (`duìbuqǐ`);
+- the first syllable's tone written; an unwritten one later is neutral, at the end (`dōngxi`) or
+  inside as a syllable that is often neutral: a particle or suffix (`zěnmeyàng`, `háizimen`), bu or
+  yi (`duìbuqǐ`), a directional complement, or a word's neutral second half (`péngyoumen`);
 - two letters or more (a one-letter word, `a1` or `à`, is English; write 啊 in characters).
 
 So plain Latin words stay English, and so do accented English words (`café`, `résumé`, `touché`,
@@ -221,9 +222,10 @@ in for a native listener; the test says where to look and whether a change moved
 
 ## Not yet
 
-- **Latin-script languages.** Routing by script can't tell Turkish or German from English, so
-  Latin text is English. The second Latin-script front end brings an explicit language choice,
-  with English the default (#40).
+- **A language choice.** Routing by script can't tell Turkish or German from English, or Cantonese
+  and Japanese from Mandarin, so Latin text is English unless it is toned pinyin, and Han
+  characters are Mandarin. A per-song language setting (Auto by default, today's order) comes next,
+  built on the one front-end list (#40).
 - **Bends on live notes:** a key pressed in Sing or a note from the plugin (`plan_note_on`) sings
   the note's pitch.
 - **Tones in speech:** Speak doesn't read Mandarin yet; its tone contours and speech tuning come
