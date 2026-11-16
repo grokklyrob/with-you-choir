@@ -26,6 +26,13 @@ CI validates with clap-validator, `auval` and pluginval. The workflow's jobs onl
 `crates/chimera-plugin/<system>`, because the agents' GitHub App can't edit `.github/workflows/`:
 `crates/chimera-plugin/plugin.yml` is the copy the owner pastes.
 
+**Signing.** On a push to this repo, CI signs the macOS bundles with the owner's Developer ID and
+notarises them (`macos/sign.sh`), so a downloaded build opens without clearing quarantine. It needs five
+Actions secrets: `MACOS_CERT_P12` (the .p12 in base64), `MACOS_CERT_PASSWORD`, and an App Store Connect
+API key as `NOTARY_KEY_P8`, `NOTARY_KEY_ID` and `NOTARY_ISSUER_ID`. A fork's pull request gets no
+secrets, so its build is signed ad hoc, and `build.sh` on a Mac signs ad hoc unless
+`CHIMERA_SIGN_IDENTITY` names a certificate in the keychain.
+
 ## Systems
 
 | | Formats | Editor | Built by |
@@ -506,5 +513,6 @@ if a dependency has no licence, or only a GPL one.
 - Sustain pedal, mod wheel and other controllers.
 - Dragging the host's window border (needs `can_resize` in nih-plug: a fork or an upstream change).
 - A full DSP reset (see Determinism).
-- Signing, notarisation and an installer, with a notice in the plugin when a new version exists.
+- An installer, and a notice in the plugin when a new version exists. Signing and notarisation are done
+  on macOS.
 - One `Singer` for the browser too, replacing the TypeScript controller.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Build CHIMERA.clap, CHIMERA.vst3 and CHIMERA.component on macOS, as universal binaries, into
 # target/bundled. All three bundles hold the same dylib: it exports clap_entry, and clap-wrapper
-# adds the VST3 and AUv2 entry points. The signature is ad hoc (no Developer ID yet).
+# adds the VST3 and AUv2 entry points. They're signed with $CHIMERA_SIGN_IDENTITY when it's set
+# (CI, from sign.sh keychain), and ad hoc otherwise.
 #
 #   crates/chimera-plugin/macos/build.sh           build
 #   crates/chimera-plugin/macos/build.sh --install build, then copy into ~/Library/Audio/Plug-Ins
@@ -37,7 +38,12 @@ bundle() { # extension, Info.plist template
   cp LICENSE "$out/THIRD-PARTY-LICENSES.txt" "$dir/Contents/Resources/"
   sed "s/@VERSION@/$version/g" "$here/$2" > "$dir/Contents/Info.plist"
   printf 'BNDL????' > "$dir/Contents/PkgInfo"
-  codesign --force --sign - "$dir"
+  if [ -n "${CHIMERA_SIGN_IDENTITY:-}" ]; then
+    # notarisation wants the hardened runtime and a secure timestamp
+    codesign --force --options runtime --timestamp --sign "$CHIMERA_SIGN_IDENTITY" "$dir"
+  else
+    codesign --force --sign - "$dir"
+  fi
   plutil -lint "$dir/Contents/Info.plist"
 }
 bundle clap Info.clap.plist
