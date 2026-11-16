@@ -102,10 +102,12 @@ pub fn offglide(ipa: &str) -> Option<&'static str> {
     }
 }
 
-/// The two vowel targets of a diphthong ("aɪ" → ("a", "ɪ")), or None.
+/// The two vowel targets of a falling diphthong ("aɪ" → ("a", "ɪ"): held, then glided to), or None.
+/// Rising diphthongs (Mandarin's "ua") and triphthongs aren't pairs of this kind: see [`onglide`],
+/// [`held_vowel`] and [`offglide`].
 pub fn diphthong_parts(ipa: &str) -> Option<(&'static str, &'static str)> {
     match expand(ipa) {
-        Some(p) if p.len() == 2 => Some((p[0], p[1])),
+        Some(p) if p.len() == 2 && !is_rising(ipa) => Some((p[0], p[1])),
         _ => None,
     }
 }
