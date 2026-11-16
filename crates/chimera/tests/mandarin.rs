@@ -79,7 +79,7 @@ fn typed(text: &str) -> Vec<(String, String, usize)> {
 fn pinyin_with_tones_is_mandarin_and_without_is_english() {
     let t = typed("nǐhǎo xièxie ni3 hao3 de5 Xī'ān nǚ");
     let text: Vec<&str> = t.iter().map(|x| x.0.as_str()).collect();
-    assert_eq!(text, ["nǐ", "hǎo", "xiè", "xie", "ni3", "hao3", "de5", "xī", "ān", "nǚ"]);
+    assert_eq!(text, ["nǐ", "hǎo", "xiè", "xie", "ni3", "hao3", "de5", "Xī", "ān", "nǚ"]); // capitals kept
     let ipa: Vec<&str> = t.iter().map(|x| x.1.as_str()).collect();
     assert_eq!(ipa, ["ni", "xaʊ", "ɕiɛ", "ɕiɛ", "ni", "xaʊ", "t˭ə", "ɕi", "ʔan", "ny"]);
     // nǐhǎo is one word: third-tone sandhi sings nǐ rising (one bend); "ni3 hao3" are two words
@@ -103,13 +103,14 @@ fn accented_english_words_stay_english() {
     // word starts with a written tone, an unwritten one inside is only bu, de or yi (résumé,
     // touché, lamé), a vowel-initial syllable inside needs an apostrophe (née, matinée, mélange,
     // brûlée), and n, ng, m are syllables only as whole words (Pokémon, détente)
-    for w in ["café", "résumé", "cliché", "naïve", "brûlée", "Pokémon", "touché", "détente", "matinée", "née", "lamé", "saké", "mélange", "à"] {
+    for w in ["café", "résumé", "cliché", "naïve", "brûlée", "Pokémon", "touché", "détente", "matinée", "née", "lamé", "saké", "mélange", "à", "olé", "Renée"] {
         assert!(!Pinyin.claims(w), "{w} read as pinyin");
     }
     // the one left: é + lan is real pinyin with a neutral last syllable
     assert!(Pinyin.claims("élan"));
     // and real pinyin still reads, including a neutral bu or de inside and apostrophes
-    for w in ["nǐhǎo", "xièxie", "dōngxi", "duìbuqǐ", "kànbujiàn", "Xī'ān", "Tiān'ānmén", "nǚ'ér", "ni3hao3", "zhong1guo2", "xǐhuan", "bú"] {
+    // review of #85: a neutral me, zi, you inside a word (zěnmeyàng, háizimen, péngyoumen)
+    for w in ["nǐhǎo", "xièxie", "dōngxi", "duìbuqǐ", "kànbujiàn", "Xī'ān", "Tiān'ānmén", "nǚ'ér", "ni3hao3", "zhong1guo2", "xǐhuan", "bú", "zěnmeyàng", "shénmeshíhou", "háizimen", "péngyoumen", "zen3meyang4"] {
         assert!(Pinyin.claims(w), "{w} not read as pinyin");
     }
 }
@@ -159,4 +160,42 @@ fn mandarin_timing_and_vowels() {
     // Mandarin's own vowels: eng back [ɤŋ], uo open [uɔ], ou central [əʊ], iao one three-part nucleus
     let n: Vec<String> = syls("风多头鸟").iter().map(|s| s.nucleus.ipa.clone()).collect();
     assert_eq!(n, ["ɤ", "uɔ", "əʊ", "iaʊ"]);
+}
+
+#[test]
+fn every_reading_in_the_lexicon_is_a_syllable_the_front_end_sings() {
+    // review of #85: 哟 唷 喲 (yo) didn't parse, so their note went missing
+    use chimera::phonetics::mandarin::pinyin_syllable;
+    use std::io::Read;
+    let path = format!("{}/../../public/data/mandarin.txt.gz", env!("CARGO_MANIFEST_DIR"));
+    let gz = std::fs::read(&path).unwrap();
+    let mut text = String::new();
+    flate2::read::GzDecoder::new(&gz[..]).read_to_string(&mut text).unwrap();
+    let mut bad = Vec::new();
+    let mut n = 0;
+    for line in text.lines() {
+        let (word, readings) = line.split_once('\t').unwrap();
+        for py in readings.split(' ') {
+            n += 1;
+            if pinyin_syllable(py, word).is_none() {
+                bad.push(format!("{word} {py}"));
+            }
+        }
+    }
+    assert!(n > 40_000, "{n} readings");
+    assert!(bad.is_empty(), "{} of {n} readings don't parse: {:?}", bad.len(), &bad[..bad.len().min(20)]);
+    assert!(pinyin_syllable("yo1", "哟").is_some());
+}
+
+#[test]
+fn a_long_word_that_cant_be_split_fails_fast() {
+    // review of #85: splitting backtracked exponentially ("xīnr" × 20 + "q", 81 letters, took 2 s)
+    let long = "xīnr".repeat(200) + "q";
+    let t = std::time::Instant::now();
+    assert!(!Pinyin.claims(&long));
+    assert!(!Pinyin.claims(&("anan".repeat(100) + "q")));
+    assert!(t.elapsed().as_millis() < 500, "{:?}", t.elapsed());
+    // and an erhua r only ends a word: xīnr is one syllable, not xi + nr
+    let texts: Vec<String> = typed("xīnr").into_iter().map(|x| x.0).collect();
+    assert_eq!(texts, ["xīnr"]);
 }

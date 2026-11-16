@@ -1,8 +1,8 @@
 /**
  * Build the Mandarin front end's lexicon shipped to the browser (and read by the CLI).
  * Usage: bun tools/build-mandarin.ts   (downloads the pinned sources below)
- * Output: public/data/mandarin.txt.gz, lines "字<TAB>zhong1" (each Han character's most common
- * reading) and "银行<TAB>yin2 hang2" (phrases whose reading differs from their characters' own,
+ * Output: public/data/mandarin.txt.gz, lines "字<TAB>zhong1" (each Han character's first listed
+ * reading, Unihan's order: usually the most common, not always, e.g. 得 de2, 长 zhang3) and "银行<TAB>yin2 hang2" (phrases whose reading differs from their characters' own,
  * which is what decides a polyphone, and every phrase with 儿, which says whether 儿 is a syllable
  * or an erhua ending), tone numbers 1-4 and 5 for neutral, ü as v.
  *
@@ -49,13 +49,16 @@ function numbered(syl: string): string | null {
 
 const isHan = (c: string) => /^[㐀-䶿一-鿿豈-﫿]$/u.test(c);
 
-// characters: "U+4E2D: zhōng,zhòng  # 中" → the first (most common) reading
+/** One syllable: one run of vowels (a character read as two, 瓲 tunwa "ton-watt", can't be one note). */
+const oneSyllable = (numberedSyl: string) => (numberedSyl.match(/[aeiouv]+/g) ?? []).length <= 1;
+
+// characters: "U+4E2D: zhōng,zhòng  # 中" → the first listed reading that is one syllable
 const chars = new Map<string, string>();
 for (const line of (await get(`${CHARS}/pinyin.txt`)).split("\n")) {
   const m = line.match(/^U\+([0-9A-F]+):\s*([^#]+)/);
   if (!m) continue;
   const c = String.fromCodePoint(parseInt(m[1], 16));
-  const first = numbered(m[2].split(",")[0].trim());
+  const first = m[2].split(",").map((r) => numbered(r.trim())).find((r) => r && oneSyllable(r));
   if (isHan(c) && first) chars.set(c, first);
 }
 

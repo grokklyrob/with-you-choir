@@ -228,6 +228,8 @@ fn final_parts(f: &str) -> Option<(&'static [&'static str], &'static str, &'stat
         "eng" => (N, "ɤ", &["ŋ"]),
         "ong" => (N, "ʊ", &["ŋ"]),
         "ia" => (&["j"], "a", N),
+        // yo (哟 唷): an interjection's [jɔ]
+        "io" => (&["j"], "ɔ", N),
         "ie" => (&["j"], "ɛ", N),
         "iao" => (&["j"], "aʊ", N),
         "iu" | "iou" => (&["j"], "əʊ", N),
@@ -470,12 +472,23 @@ fn valid_syllable(base: &str) -> bool {
     (real(base) || erhua) && pinyin_syllable(&format!("{base}1"), "").is_some()
 }
 
+/// Syllables often unstressed and toneless inside a word: particles and suffixes (de le me men zi
+/// tou ge ba ma ne), the negation and 一 in a verb pattern (bu yi), directional complements (lai qu
+/// shang xia guo), and words' second halves that are neutral (you huan xi shi hou fu mian bian li
+/// zhe). Written without a tone inside a toned word, they are neutral.
+const NEUTRAL_INSIDE: &[&str] = &[
+    "ba", "bian", "bu", "de", "fu", "ge", "guo", "hou", "huan", "lai", "le", "li", "ma", "me", "men", "mian", "ne", "qu",
+    "shang", "shi", "tou", "xi", "xia", "yi", "you", "zhe", "zi",
+];
+
 /// A word → (spelling, numbered pinyin) per syllable; None if it carries no tone or isn't pinyin.
 fn parse_pinyin(word: &str) -> Option<Vec<(String, String)>> {
     // pieces end at a tone number or an apostrophe; each letter keeps its spelling and its mark
     let mut pieces: Vec<(Vec<(char, char, u8)>, Option<u8>)> = vec![(Vec::new(), None)];
     let mut toned = false;
-    for c in word.chars().flat_map(char::to_lowercase) {
+    // each letter is read lowercased but keeps its spelling for the note's text (Xī'ān, not xī'ān)
+    for shown in word.chars() {
+        let c = shown.to_lowercase().next().unwrap_or(shown);
         let last = pieces.last_mut().unwrap();
         if let Some(d) = c.to_digit(10) {
             if d > 5 || last.0.is_empty() {
@@ -487,10 +500,10 @@ fn parse_pinyin(word: &str) -> Option<Vec<(String, String)>> {
         } else if c == '\'' {
             pieces.push((Vec::new(), None));
         } else if let Some((b, t)) = tone_mark(c) {
-            last.0.push((c, b, t));
+            last.0.push((shown, b, t));
             toned = true;
         } else if c == 'ü' || c.is_ascii_lowercase() {
-            last.0.push((c, if c == 'ü' { 'v' } else { c }, 0));
+            last.0.push((shown, if c == 'ü' { 'v' } else { c }, 0));
         } else {
             return None;
         }
@@ -522,46 +535,58 @@ fn parse_pinyin(word: &str) -> Option<Vec<(String, String)>> {
             start = end;
         }
     }
-    // a toned word starts with a written tone; after that an unwritten one is neutral, at the end
-    // (xièxie, dōngxi) or as bu, de, yi inside (duìbuqǐ, kànbujiàn). English words with accents
-    // break this: résumé (su unwritten inside), touché (tou unwritten first)
+    // a toned word starts with a written tone, and an unwritten one later is neutral: at the end
+    // (xièxie, dōngxi), or inside as one of the syllables that are often neutral (zěnmeyàng,
+    // háizimen, duìbuqǐ). English words with accents break this: résumé (su unwritten inside),
+    // touché (tou unwritten first)
     let last = written.len() - 1;
-    let neutral_inside = |b: &str| matches!(b, "bu" | "de" | "yi");
+    let neutral_inside = |b: &str| NEUTRAL_INSIDE.contains(&b);
     if !written[0].0 || written.iter().enumerate().any(|(i, (w, b))| !w && i > 0 && i < last && !neutral_inside(b)) {
         return None;
     }
     Some(out)
 }
 
-/// The longest valid syllable first, backing off when the rest can't be split.
+/// The longest valid syllable first, backing off when the rest can't be split. Positions the rest
+/// already failed from are remembered, so a long word that can't be split fails in linear time (it
+/// was exponential: a 30-letter typo took seconds, and Sing re-reads the lyrics on every keystroke).
 fn split_syllables(base: &str) -> Option<Vec<usize>> {
-    fn go(base: &str, at: usize, out: &mut Vec<usize>) -> bool {
+    fn go(base: &str, at: usize, out: &mut Vec<usize>, failed: &mut [bool]) -> bool {
         if at == base.len() {
             return true;
+        }
+        if failed[at] {
+            return false;
         }
         for end in (at + 1..=base.len().min(at + 6)).rev() {
             let s = &base[at..end];
             // pinyin's spelling: a syllable starting with a, o or e after another needs an apostrophe
             // (Xī'ān), so née isn't né + e; the syllabic nasals are whole words (嗯 n), so Pokémon
-            // isn't po ké mo + n
+            // isn't po ké mo + n; and an erhua r ends a word (xīnr isn't xi + nr)
             if at > 0 && matches!(s.as_bytes()[0], b'a' | b'o' | b'e') {
                 continue;
             }
-            if matches!(s, "n" | "ng" | "m" | "hm" | "hng") && !(at == 0 && end == base.len()) {
+            let nasal = matches!(s.trim_end_matches('r'), "n" | "ng" | "m" | "hm" | "hng");
+            if nasal && !(at == 0 && end == base.len()) {
+                continue;
+            }
+            if s.len() > 1 && s != "er" && s.ends_with('r') && end != base.len() {
                 continue;
             }
             if valid_syllable(s) {
                 out.push(end);
-                if go(base, end, out) {
+                if go(base, end, out, failed) {
                     return true;
                 }
                 out.pop();
             }
         }
+        failed[at] = true;
         false
     }
     let mut out = Vec::new();
-    go(base, 0, &mut out).then_some(out)
+    let mut failed = vec![false; base.len()];
+    go(base, 0, &mut out, &mut failed).then_some(out)
 }
 
 impl FrontEnd for Pinyin {
