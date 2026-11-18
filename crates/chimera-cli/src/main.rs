@@ -24,12 +24,14 @@ usage: chimera <command> [args] [--float]
   render beatbox [outdir] [preset name | pattern] [male|female|child] [bpm] [bars]
   render creature [creatureId] [outdir]
   render vowels  [male|female|child] [out]
+  syllables      \"lyrics\"    (what the language front ends read: one JSON syllable per sung note)
   diagnose       [outdir]
   compare csd    [csd-dir] [outdir] [--songs a|b|all|en001a,…] [--body female] [--jobs n]
                  [--against earlier/score.json]  (score.json: distance to the singer, and the verdict)
   compare tsp    [tsp-dir] [outdir] [--speakers FA,MA,…] [--jobs n] [--dump]
                  [--against earlier/score.json]  (distance to 23 real speakers, phone by phone)
-  calibrate vowels     [male|female|child|all] [--out file]
+  calibrate vowels     [male|female|child|all] [--missing] [--out file]
+                       (--missing: fit only vowels the table lacks; existing entries stay untouched)
   calibrate consonants [--out file]
 
 Output names are stems (<out>.wav). --float writes 32-bit float WAVs instead of 16-bit PCM.
@@ -112,6 +114,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["compare", "csd", ..] => compare::csd(&ctx, &args[2..]),
         ["compare", "tsp", ..] => compare::tsp::run(&ctx, &args[2..]),
         ["diagnose", ..] => diagnose::run(&ctx, &args[1..]),
+        ["syllables", text] => render::sung_lyrics(text).and_then(|s| serde_json::to_string(&s).map_err(|e| e.to_string())).map(|j| println!("{j}")),
         ["calibrate", "vowels", ..] => calibrate::vowels(&args[2..]),
         ["calibrate", "consonants", ..] => calibrate::consonants(&args[2..]),
         ["help" | "--help" | "-h", ..] => {

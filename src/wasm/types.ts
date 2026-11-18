@@ -159,6 +159,28 @@ export interface Segment {
   stress?: number;
   f0?: number;
   wordEnd?: boolean;
+  /** a voiceless stop or affricate's aspiration as its front end decides it (unset: English's rule) */
+  aspirated?: boolean;
+  /** how long an aspirated stop aspirates (s); unset: 50 ms */
+  vot?: number;
+  /** a vowel said with the velum lowered (IPA combining tilde) */
+  nasalized?: boolean;
+  /** a consonant with a secondary palatal gesture, the tongue body raised and fronted (IPA ʲ) */
+  palatalized?: boolean;
+  /** breathy voice: a voiced stop or affricate's release (IPA ʱ), or a vowel (combining diaeresis below) */
+  breathy?: boolean;
+  /** a vowel that is a glide off the vowel before it, reached over this long (s): one movement, not a second held vowel */
+  glide?: number;
+}
+
+/** What the engine will not say as written in a piece of IPA text (see `skippedIpa`). */
+export interface SkippedIpa {
+  /** symbols it does not know (a tone letter, a click, a capital, a typo) */
+  unknown: string[];
+  /** symbols it knows but has no sound for (a vowel letter without a calibrated vowel) */
+  noSound: string[];
+  /** letters written with a mark it does not model or cannot apply there: the letter is said, the mark is not */
+  ignoredMarks: string[];
 }
 
 export interface PlannedSegment {
@@ -191,6 +213,20 @@ export interface Syllable {
   melisma?: boolean;
   wordEnd: boolean;
   phraseEnd: boolean;
+  /** pitch bends inside the sung note, written by the syllable's front end (a tone, an accent) */
+  pitch?: Bend[];
+  /** nasalise this fraction of the vowel before a closing rhyme's nasal coda (see `closing`; unset: none) */
+  nasalLead?: number;
+  /** the rhyme's ending (an off-glide, a nasal coda) is one closing movement at the note's end, this long at most (s); unset: a held part */
+  closing?: number;
+}
+
+/** A bend of the pitch inside a sung note: `st` semitones, at its vowel's start or end, over `len` of the vowel (at most `max` s). */
+export interface Bend {
+  at: "start" | "middle" | "end";
+  len: number;
+  max: number;
+  st: number;
 }
 
 export interface SungNote {
