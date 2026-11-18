@@ -59,7 +59,7 @@ function Lyrics() {
         rows={Math.min(4, lyrics.split("\n").length)}
         lang={lang}
         aria-label="Lyrics to sing"
-        placeholder={lang === "tr" ? "Söylenecek sözleri yaz" : "Type the words to sing"}
+        placeholder="Type the words to sing"
         title="Sing sings these words to the tune, a line to each of its phrases. Each key sings the next syllable; hold a key while you press the next one to sing legato. A lone “-” between words holds a vowel over several notes; hyphens split a word your way (“ti-ger”)."
       />
       <div className="syllables" role="group" aria-label="Syllables. Each note sings the marked one; choose another to start there.">
@@ -89,7 +89,7 @@ function Lyrics() {
   );
 }
 
-/** The language the lyrics' Latin-script words are read in (other scripts are read by their own). */
+/** The language Latin-script words are read in, in Sing and Speak (other scripts are read by their own). */
 function LyricsLang() {
   const lang = useSing((s) => s.lang);
   const setLang = useSing((s) => s.setLang);

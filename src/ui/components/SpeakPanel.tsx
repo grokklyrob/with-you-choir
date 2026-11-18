@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { skippedLines } from "../skipped.ts";
 import { useStore } from "../store.ts";
+import { useSing } from "../singing.ts";
 import { speakText, speakPhrases, stopSpeaking, onPlan, currentPlan, spokenWordNow, speakingNow } from "../speech.ts";
 import { mouthWords } from "../mouthWords.ts";
 import { tokenizeIpa, type Lang } from "../../wasm/engine.ts";
@@ -138,8 +139,10 @@ export function SpeakRight() {
   const body = useStore((s) => s.body);
   const f0 = useStore((s) => s.source.f0);
   const start = useStore((s) => s.start);
-  const [text, setText] = useState(EXAMPLES.en[0]);
-  const [lang, setLang] = useState<Lang>("en");
+  // one language for Speak and Sing, kept with Sing's words
+  const lang = useSing((s) => s.lang);
+  const setLang = useSing((s) => s.setLang);
+  const [text, setText] = useState(EXAMPLES[lang][0]);
   const [ipa, setIpa] = useState(false);
   const [rate, setRate] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -212,7 +215,7 @@ export function SpeakRight() {
               spellCheck={!ipa}
               lang={ipa ? undefined : lang}
               aria-label={ipa ? "IPA to speak" : "Text to speak"}
-              placeholder={ipa ? "Type IPA, for example ˈhɛloʊ" : lang === "tr" ? "Söylenecek bir şey yaz" : "Type something for the voice to say"}
+              placeholder={ipa ? "Type IPA, for example ˈhɛloʊ" : "Type something for the voice to say"}
             />
           </div>
           <div className="say-row">

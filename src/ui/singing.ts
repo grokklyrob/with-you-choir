@@ -39,7 +39,8 @@ const AH: Syllable = { text: "ah", onset: [], nucleus: { ipa: "ɑ", stress: 1 },
 
 interface SingState {
   lyrics: string;
-  /** the language Latin-script lyrics are in (other scripts are read by their own) */
+  /** the language Latin-script words are read in: the lyrics here, and Speak's text (one setting
+   *  for both, kept with the words; other scripts are read by their own) */
   lang: Lang;
   syllables: Syllable[];
   /** the syllable the next key sings */

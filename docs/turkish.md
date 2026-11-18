@@ -1,9 +1,10 @@
 # Turkish
 
-Speak and Sing read Turkish once you choose it: **TR** next to "Text is IPA" in Speak, and next
-to the lyrics in Sing. Turkish is written in Latin letters, so the lyrics router can't tell it from
-English by script ([language-front-ends.md](language-front-ends.md)); English stays the default.
-Hangul and Cyrillic words in the same lyrics still go to their own front ends.
+Speak and Sing read Turkish once you choose it: **TR**, next to "Text is IPA" in Speak and next
+to the lyrics in Sing. It is one setting for both tabs, kept on the device with Sing's words.
+Turkish is written in Latin letters, so the lyrics router can't tell it from English by script
+([language-front-ends.md](language-front-ends.md)); English stays the default. Toned pinyin,
+Hangul, Cyrillic and Han characters in the same lyrics still go to their own front ends.
 
 `crates/chimera/src/phonetics/turkish.rs` reads the spelling by rule, with no dictionary, onto
 the existing inventory (no new sounds).
