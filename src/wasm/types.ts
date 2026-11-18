@@ -171,6 +171,8 @@ export interface Segment {
   breathy?: boolean;
   /** a vowel that is a glide off the vowel before it, reached over this long (s): one movement, not a second held vowel */
   glide?: number;
+  /** a long sound: this many times the duration rules' length (Turkish's vowel before ğ) */
+  length?: number;
 }
 
 /** What the engine will not say as written in a piece of IPA text (see `skippedIpa`). */

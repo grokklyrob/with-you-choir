@@ -19,6 +19,12 @@ describe("Turkish", () => {
     expect(phrases[1].intonation).toBe("statement");
   });
 
+  test("a vowel before ğ is one long vowel", () => {
+    const segs = turkishPhrases("yağmur")[0].segments;
+    expect(segs.map((s) => s.ipa)).toEqual(["j", "a", "m", "u", "ɾ"]);
+    expect(segs[1].length).toBe(1.7);
+  });
+
   test("each word gets its span in the plan", () => {
     const phrases = turkishPhrases("Bugün hava çok güzel.");
     const plan = planPhrases(phrases, { body: male, t0: 0 });

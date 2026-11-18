@@ -62,6 +62,10 @@ pub struct Segment {
     /// None: a vowel of its own
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub glide: Option<f64>,
+    /// a long sound: it lasts this many times what the duration rules give it (Turkish's vowel
+    /// before ğ, "dağ" [daː]); None: as they give. An explicit `dur` wins.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub length: Option<f64>,
 }
 
 impl Segment {

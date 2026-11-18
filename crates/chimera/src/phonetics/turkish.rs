@@ -3,8 +3,8 @@
 //! - /k g l/ are fronted ([c ɟ l]) next to a front vowel, and before â and û, which mark a fronted
 //!   consonant in loans; next to a back vowel they are [k g ɫ]: "kedi" [cedi], "kar" [kaɾ],
 //!   "kâr" [caɾ], "yol" [joɫ], "güzel" [ɟyzel].
-//! - ğ lengthens the vowel before it ("dağ" [daː]), is a glide between front vowels ("değil"
-//!   [dejil]) and vanishes between other vowels ("ağaç" [aatʃ]).
+//! - ğ lengthens the vowel before it ("dağ" [daː]: one vowel, 1.7 times as long), is a glide
+//!   between front vowels ("değil" [dejil]) and vanishes between other vowels ("ağaç" [aatʃ]).
 //! - A doubled consonant letter is one long consonant ("dikkat" [dikːat]).
 //!
 //! Stress falls on a word's last syllable unless something earlier claims it (Lees 1961; Sezer
@@ -34,6 +34,9 @@ use super::{Intonation, Segment, Syllable};
 
 /// A doubled consonant lasts this many times its single inherent duration.
 const GEMINATE: f64 = 1.6;
+/// A vowel lengthened by ğ lasts this many times what the duration rules give it (as the IPA
+/// tokenizer lengthens a vowel marked ː).
+const LONG_VOWEL: f64 = 1.7;
 
 fn is_vowel_letter(c: char) -> bool {
     "aeıioöuüâîû".contains(c)
@@ -123,12 +126,13 @@ fn front_context(w: &[char], i: usize, j: usize) -> bool {
 }
 
 /// One sound of a word: the vowel's syllable (its vowel letter's ordinal), a duration for a long
-/// consonant, and the letter it is written with (a long consonant's second letter, which opens
-/// the next syllable).
+/// consonant, whether a vowel is long (before ğ), and the letter it is written with (a long
+/// consonant's second letter, which opens the next syllable).
 struct Phone {
     ipa: &'static str,
     syllable: Option<usize>,
     dur: Option<f64>,
+    long: bool,
     letter: usize,
 }
 
@@ -139,7 +143,7 @@ fn letters_to_phones(w: &[char]) -> Vec<Phone> {
     while i < w.len() {
         let c = w[i];
         if is_vowel_letter(c) {
-            out.push(Phone { ipa: vowel_ipa(c), syllable: Some(nv), dur: None, letter: i });
+            out.push(Phone { ipa: vowel_ipa(c), syllable: Some(nv), dur: None, long: false, letter: i });
             nv += 1;
             i += 1;
             continue;
@@ -148,9 +152,13 @@ fn letters_to_phones(w: &[char]) -> Vec<Phone> {
             let prev = i.checked_sub(1).map(|p| w[p]).filter(|p| is_vowel_letter(*p));
             let next = w.get(i + 1).copied().filter(|n| is_vowel_letter(*n));
             match (prev, next) {
-                (Some(p), Some(n)) if is_front(p) && is_front(n) => out.push(Phone { ipa: "j", syllable: None, dur: None, letter: i }),
-                // before a consonant or at the end: the vowel is long, its second half in the same syllable
-                (Some(p), None) => out.push(Phone { ipa: vowel_ipa(p), syllable: Some(nv - 1), dur: None, letter: i }),
+                (Some(p), Some(n)) if is_front(p) && is_front(n) => out.push(Phone { ipa: "j", syllable: None, dur: None, long: false, letter: i }),
+                // before a consonant or at the end: the vowel before is one long vowel
+                (Some(_), None) => {
+                    if let Some(v) = out.last_mut() {
+                        v.long = true;
+                    }
+                }
                 // between other vowels it vanishes, and after a consonant (no native word has one) too
                 _ => {}
             }
@@ -164,9 +172,9 @@ fn letters_to_phones(w: &[char]) -> Vec<Phone> {
         if long {
             // the inherent duration the planner would give it (Klatt's table, else the inventory's)
             let single = inherent_ms(sounds[0]).map(|(inh, _)| inh / 1000.0).or_else(|| phoneme(sounds[0], BodyMix::MALE).map(|d| d.dur)).unwrap_or(0.08);
-            out.push(Phone { ipa: sounds[0], syllable: None, dur: Some(GEMINATE * single), letter: i + 1 });
+            out.push(Phone { ipa: sounds[0], syllable: None, dur: Some(GEMINATE * single), long: false, letter: i + 1 });
         } else {
-            out.extend(sounds.iter().map(|&ipa| Phone { ipa, syllable: None, dur: None, letter: i }));
+            out.extend(sounds.iter().map(|&ipa| Phone { ipa, syllable: None, dur: None, long: false, letter: i }));
         }
         i = j;
     }
@@ -344,7 +352,13 @@ struct Parsed {
 
 impl Parsed {
     fn segment(&self, p: &Phone) -> Segment {
-        Segment { ipa: p.ipa.to_string(), dur: p.dur, stress: Some(u8::from(p.syllable.is_some() && p.syllable == self.stressed)), ..Default::default() }
+        Segment {
+            ipa: p.ipa.to_string(),
+            dur: p.dur,
+            length: p.long.then_some(LONG_VOWEL),
+            stress: Some(u8::from(p.syllable.is_some() && p.syllable == self.stressed)),
+            ..Default::default()
+        }
     }
 }
 
@@ -375,8 +389,8 @@ pub fn word(typed: &str, phrase_initial: bool) -> Vec<Segment> {
 }
 
 /// One word's sung syllables, split where Turkish spelling splits them: a consonant before a vowel
-/// opens its syllable ("bağ-la-rın-da", "dik-kat"). A long vowel before ğ is one note's vowel,
-/// and a long consonant is the next syllable's onset.
+/// opens its syllable ("bağ-la-rın-da"). A long vowel before ğ is one note's vowel, and a long
+/// consonant is sung on both sides ("dik-kat": the first note closes on it, the next opens with it).
 fn sung_syllables(typed: &str, phrase_initial: bool) -> Vec<Syllable> {
     let p = parse(typed, phrase_initial);
     let vowels: Vec<usize> = p.letters.iter().enumerate().filter(|(_, c)| is_vowel_letter(**c)).map(|(i, _)| i).collect();
@@ -396,7 +410,7 @@ fn sung_syllables(typed: &str, phrase_initial: bool) -> Vec<Syllable> {
     for ph in &p.phones {
         let k = starts.iter().rposition(|&a| a <= ph.letter).unwrap_or(0);
         // a note sets its own lengths
-        let seg = Segment { dur: None, ..p.segment(ph) };
+        let seg = Segment { dur: None, length: None, ..p.segment(ph) };
         if ph.syllable.is_some() {
             if !voiced[k] {
                 out[k].nucleus = seg;
@@ -405,6 +419,11 @@ fn sung_syllables(typed: &str, phrase_initial: bool) -> Vec<Syllable> {
         } else if voiced[k] {
             out[k].coda.push(seg);
         } else {
+            // a long consonant closes the syllable before and opens this one, as it is written
+            // ("dik-kat"); in speech it is one long consonant
+            if ph.dur.is_some() && k > 0 {
+                out[k - 1].coda.push(seg.clone());
+            }
             out[k].onset.push(seg);
         }
     }

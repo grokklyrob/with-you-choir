@@ -221,5 +221,11 @@ pub fn klatt_durations(segs: &[Segment], info: impl Fn(&Segment) -> SegInfo) -> 
             durs[i] = (durs[i] - durs[i + 1]).max(NUCLEUS_VOWEL_MIN);
         }
     }
+    // a long sound: the rules' duration, so many times over
+    for (d, s) in durs.iter_mut().zip(segs) {
+        if let (None, Some(k)) = (s.dur, s.length) {
+            *d *= k;
+        }
+    }
     durs
 }

@@ -9,10 +9,11 @@ use chimera::phonetics::syllables::{Lang, lyrics_in};
 use chimera::phonetics::turkish::{lyrics_to_syllables, to_phrases, word};
 use chimera::phonetics::{Intonation, Segment, Syllable};
 
-/// Segments as IPA, a stress mark before the stressed vowel and a space after each word.
+/// Segments as IPA, a stress mark before the stressed vowel, ː after a long one and a space after
+/// each word.
 fn shown(segs: &[Segment]) -> String {
     segs.iter()
-        .map(|s| format!("{}{}{}", if s.stress == Some(1) { "ˈ" } else { "" }, s.ipa, if s.word_end == Some(true) { " " } else { "" }))
+        .map(|s| format!("{}{}{}{}", if s.stress == Some(1) { "ˈ" } else { "" }, s.ipa, if s.length.is_some() { "ː" } else { "" }, if s.word_end == Some(true) { " " } else { "" }))
         .collect::<String>()
         .trim_end()
         .to_string()
@@ -60,14 +61,30 @@ fn k_g_l_are_front_or_back_by_their_vowel() {
 
 #[test]
 fn soft_g_lengthens_glides_or_vanishes() {
-    // before a consonant or at the end: the vowel before is long (one syllable, both halves stressed)
-    assert_eq!(w("dağ"), "dˈaˈa");
-    assert_eq!(w("öğretmen"), "øøɾetmˈen");
+    // before a consonant or at the end: the vowel before is one long vowel (it was two vowels, both
+    // stressed: "d aˈ aˈ")
+    assert_eq!(w("dağ"), "dˈaː");
+    assert_eq!(w("yağmur"), "jaːmˈuɾ");
+    assert_eq!(w("öğretmen"), "øːɾetmˈen");
     // between front vowels: a glide
     assert_eq!(w("değil"), "dejˈil");
     // between others: gone
     assert_eq!(w("ağaç"), "aˈatʃ");
     assert_eq!(w("soğuk"), "soˈuk");
+}
+
+#[test]
+fn a_long_vowel_lasts_longer_in_the_plan() {
+    let vowel = |text: &str| {
+        let inputs: Vec<PhraseInput> = to_phrases(text).iter().map(|p| PhraseInput { segments: p.segments.clone(), intonation: Some(p.intonation), pause: Some(p.pause) }).collect();
+        let plan = plan_phrases(&inputs, &PlanOptions { body: BodyMix::MALE, ..Default::default() });
+        let a: Vec<f64> = plan.segments.iter().filter(|s| s.ipa == "a").map(|s| s.t1 - s.t0).collect();
+        assert_eq!(a.len(), 1, "{text}: one vowel");
+        a[0]
+    };
+    // the same place in the phrase and the same stress: the duration rules' length, 1.7 times over
+    let (long, short) = (vowel("sağ"), vowel("sa"));
+    assert!((long / short - 1.7).abs() < 1e-6, "{long} vs {short}");
 }
 
 #[test]
@@ -202,8 +219,8 @@ fn lyrics_split_where_turkish_spelling_does() {
     // ğ before a consonant: one note's vowel, nothing after it
     assert_eq!(p[0], "b.a.");
     assert_eq!(&p[1..4], ["ɫ.a.", "ɾ.ɯ.n", "d.a."]);
-    // a long consonant opens the next syllable
-    assert_eq!(&p[4..6], ["d.i.", "k.a.t"]);
+    // a long consonant closes one sung syllable and opens the next, as it is written
+    assert_eq!(&p[4..6], ["d.i.k", "k.a.t"]);
     // ğ between front vowels: the glide opens its syllable
     assert_eq!(&p[6..8], ["d.e.", "j.i.l"]);
     assert_eq!(p[8], "d.a.");

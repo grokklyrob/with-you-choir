@@ -15,8 +15,8 @@ the existing inventory (no new sounds).
   `I` lowers to ı and `İ` to i.
 - An apostrophe keeps a name apart from its suffixes, and marks it as a name: `Ankara'da`.
 - In Sing, a vowel is a note: words split where Turkish spelling splits them (bağ-la-rın-da,
-  dik-kat). `-` alone holds the previous vowel onto the next note, and hyphens split a word your
-  way.
+  dik-kat, a doubled consonant sung on both sides). `-` alone holds the previous vowel onto the
+  next note, and hyphens split a word your way.
 - Numbers are read out in Speak ("1.923,5" → "bin dokuz yüz yirmi üç virgül beş").
 
 ## What it does
@@ -24,8 +24,8 @@ the existing inventory (no new sounds).
 | | |
 |---|---|
 | k g l | fronted ([c ɟ l]) next to a front vowel and before â û; [k g ɫ] next to a back vowel: kedi [cedi], kar [kaɾ], kâr [caɾ], yol [joɫ] |
-| ğ | lengthens the vowel before a consonant or at the end (dağ [daː]), a glide between front vowels (değil [dejil]), gone between other vowels (ağaç [aatʃ]) |
-| Doubled letters | one long consonant, 1.6 times its length (dikkat [dikːat]) |
+| ğ | lengthens the vowel before a consonant or at the end: one vowel, 1.7 times what the duration rules give it (dağ [daː], yağmur [jaːmuɾ]); a glide between front vowels (değil [dejil]); gone between other vowels (ağaç [aatʃ]) |
+| Doubled letters | in speech one long consonant, 1.6 times its length (dikkat [dikːat]); in song it closes one note and opens the next (dik-kat) |
 | Stress | the last syllable, unless something earlier claims it (below) |
 | Intonation | statement for every phrase: a yes/no question peaks before "mı" and falls, which the nuclear accent already gives |
 
