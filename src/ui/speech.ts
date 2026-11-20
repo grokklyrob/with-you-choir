@@ -5,14 +5,17 @@
 import { create } from "zustand";
 import { inPlugin } from "../audio/pluginBridge.ts";
 import type { BodyMix } from "../wasm/types.ts";
-import { EnglishG2P, type Phrase } from "../wasm/engine.ts";
+import { EnglishG2P, MandarinLexicon, turkishPhrases, type Lang, type Phrase } from "../wasm/engine.ts";
 import { tokenizeIpa } from "../wasm/engine.ts";
 import { planPhrases, type Plan, type Segment } from "../wasm/engine.ts";
 import { engine } from "../audio/AudioEngine.ts";
 import type { Gesture } from "../wasm/types.ts";
+import { ipaPhraseTexts } from "./skipped.ts";
 import { wordSpans, type WordSpan } from "./words.ts";
 
 export const g2p = new EnglishG2P();
+/** the Mandarin front end's lexicon, loaded when lyrics first have Han characters */
+export const zh = new MandarinLexicon();
 
 interface SpeechState {
   text: string;
@@ -73,11 +76,7 @@ export function currentPlan(): SpokenPlan | null {
 }
 
 export function ipaToPhrases(text: string): Phrase[] {
-  return text
-    .split(/[|.?!]+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => ({ segments: tokenizeIpa(p), intonation: "statement" as const, pause: 0.3, words: [] }));
+  return ipaPhraseTexts(text).map((p) => ({ segments: tokenizeIpa(p), intonation: "statement" as const, pause: 0.3, words: [] }));
 }
 
 export function transcribe(phrases: { segments: Segment[]; intonation?: string }[]): string {
@@ -92,10 +91,12 @@ export function speakPhrases(phrases: { segments: Segment[]; intonation?: "state
   return current;
 }
 
-export async function speakText(text: string, o: { ipa: boolean; body: BodyMix; rate: number; f0: number }): Promise<SpokenPlan | null> {
+/** Say text: IPA, or words read as `lang` (English unless said). */
+export async function speakText(text: string, o: { ipa: boolean; lang?: Lang; body: BodyMix; rate: number; f0: number }): Promise<SpokenPlan | null> {
   if (!text.trim()) return null;
   let phrases: Phrase[];
   if (o.ipa) phrases = ipaToPhrases(text);
+  else if (o.lang === "tr") phrases = turkishPhrases(text);
   else {
     try {
       await g2p.load();
@@ -111,6 +112,15 @@ export async function speakText(text: string, o: { ipa: boolean; body: BodyMix; 
 export function stopSpeaking(): void {
   engine.stopSpeech();
   if (current) cutId = current.id;
+}
+
+/** Whether an utterance is sounding: scheduled (or waiting for the worklet) and not over or stopped. */
+export function speakingNow(): boolean {
+  const p = current;
+  if (!p || p.id === cutId) return false;
+  const t = engine.voiceClock();
+  if (p.offset === null || t === null) return true;
+  return t - p.offset < p.plan.end;
 }
 
 /** The word being spoken now (null between words and once the speech is over or stopped). */

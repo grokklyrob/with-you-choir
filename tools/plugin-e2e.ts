@@ -192,9 +192,10 @@ try {
   await until("Play is saved", async () => (await state()).settings.mode === "play");
   await page.waitForSelector(".right-play");
   await page.screenshot({ path: `${outDir}/play.png` });
-  await page.getByRole("button", { name: "Hold breath" }).click();
-  await until("Hold breath breathes", async () => (await tele())!.gate > 0.5);
-  await page.getByRole("button", { name: "Hold breath" }).click();
+  // Play's main button: Breathe, then Stop while it breathes
+  await page.getByRole("button", { name: "Breathe" }).click();
+  await until("Breathe breathes", async () => (await tele())!.gate > 0.5);
+  await page.getByRole("button", { name: "Stop" }).click();
   await until("and stops", async () => (await tele())!.gate < 0.1);
   await host("note", 69);
   await until("a host key breathes at its pitch", async () => Math.abs((await tele())!.f0 - 440) < 8);
@@ -250,7 +251,7 @@ try {
   await page.getByRole("radio", { name: /^speak$/i }).click();
   await until("Rust is in Speak", async () => (await state()).settings.mode === "speak");
   const say = page.getByRole("textbox", { name: "Text to speak" });
-  await say.fill("Hello there.\nNice to meet you.");
+  await say.fill("Hello there, it is so good to see you again.\nNice to meet you.");
   // in Bitwig ⌘C and ⌘V did nothing here: no Edit menu sends them to the webview, so the page asks Rust
   const edits = () => page.evaluate(() => (window as never as { __sent: string[] }).__sent.map((m) => JSON.parse(m)).filter((m) => m.type === "edit").map((m) => m.action));
   await say.press("Meta+A");
@@ -258,12 +259,12 @@ try {
   await say.press("Meta+V");
   await page.getByRole("radio", { name: /^speak$/i }).press("Meta+V");
   check("⌘A, ⌘C and ⌘V in the text box go to Rust, and not elsewhere", JSON.stringify(await edits()) === '["selectAll","copy","paste"]', await edits());
-  check("and the text box keeps its text", (await say.inputValue()) === "Hello there.\nNice to meet you.");
+  check("and the text box keeps its text", (await say.inputValue()) === "Hello there, it is so good to see you again.\nNice to meet you.");
   await until("each line of the text is a line", async () => (await page.locator(".say-line").count()) === 2);
   const nextLine = () => page.locator(".say-line.next").textContent();
-  check("the first is next", (await nextLine()) === "Hello there.");
+  check("the first is next", (await nextLine()) === "Hello there, it is so good to see you again.");
   const shown = () => page.locator(".transcription").textContent();
-  check("nothing transcribed until it's said", /appears here/.test((await shown()) ?? ""));
+  check("nothing transcribed until it's said", ((await shown()) ?? "").trim() === "");
   await host("note", 60);
   await until("a note says the line: its transcription shows", async () => /^\/.*\/$/.test((await shown()) ?? ""));
   await until("the voice is voiced", async () => (await tele())!.voicing > 0.3);
@@ -275,17 +276,18 @@ try {
   await host("off", 60);
   await page.waitForTimeout(100);
   check("a line isn't stopped by its note's release", (await tele())!.voicing > 0.1 || (await page.evaluate(() => fetch("/speech").then((r) => r.ok))));
+  // Speak's main button is Stop while a line sounds (the first line is long, so it still is)
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   await until("Stop stops it", async () => (await tele())!.voicing < 0.1);
   await page.getByRole("button", { name: "Speak", exact: true }).click();
-  await until("the Speak button says the next line", async () => (await nextLine()) === "Hello there." && (await tele())!.voicing > 0.1);
+  await until("the Speak button says the next line", async () => (await nextLine()) === "Hello there, it is so good to see you again." && (await tele())!.voicing > 0.1);
   // picking a line while stopped is where playing starts
   await page.locator(".say-line").nth(1).click();
   await until("a line can be picked", async () => (await nextLine()) === "Nice to meet you." && (await state()).settings.speech.startLine === 1);
   await host("play");
   await until("the transport starts from it", async () => (await nextLine()) === "Nice to meet you.");
   await host("note", 60);
-  await until("and a note says it", async () => (await nextLine()) === "Hello there.");
+  await until("and a note says it", async () => (await nextLine()) === "Hello there, it is so good to see you again.");
   await host("off", 60);
   await host("stop");
   await until("the transport's stop silences it", async () => (await tele())!.voicing < 0.1);
@@ -299,10 +301,10 @@ try {
   const slow = await planEnd();
   await page.getByRole("slider", { name: /rate/i }).first().press("End");
   await until("a faster rate replans the lines", async () => (await planEnd()) < slow);
-  await page.locator(".toggle", { hasText: "Text is IPA" }).click();
+  await page.getByRole("button", { name: "Text is IPA" }).click();
   await page.getByRole("textbox", { name: "IPA to speak" }).fill("ˈhɛloʊ");
   await until("IPA is said as written", async () => (await page.locator(".say-line").count()) === 1 && (await state()).settings.speech.ipa === true);
-  await page.locator(".toggle", { hasText: "Text is IPA" }).click();
+  await page.getByRole("button", { name: "Text is IPA" }).click();
   await until("back to text", async () => (await state()).settings.speech.ipa === false);
   await say.fill("Saved with the project.");
   await until("the text is in the project's state", async () => (await state()).settings.speech.text === "Saved with the project.");
@@ -320,10 +322,14 @@ try {
     const s = (await state()).settings;
     return s.mode === "beatbox" && s.artic.jaw === 0.4;
   });
-  const playButton = page.locator(".transport button.play");
+  // Beatbox's main button, and the pattern and tempo it shows (main's action bar and Tempo screen)
+  const playButton = page.locator(".right-beatbox .act-primary");
+  const pattern = () => page.getByRole("combobox", { name: "Pattern" }).evaluate((s: HTMLSelectElement) => s.selectedOptions[0]?.textContent ?? "");
+  const tempoShown = () => page.locator(".s-transport").textContent().then((t) => t ?? "");
+  const beatChip = (name: string) => page.locator(".right-beatbox .action-bar .chip", { hasText: name });
   const playhead = () => page.locator(".seq-row").first().locator(".cell.now").count();
   check("nothing runs yet", (await playhead()) === 0 && (await playButton.textContent()) === "Play beat");
-  check("the first beat is the saved one", /Boots and cats/.test((await page.locator(".s-seq").textContent()) ?? ""));
+  check("the first beat is the saved one", /Boots and cats/.test(await pattern()));
   // the button, with the host stopped
   await playButton.click();
   await until("the button runs the pattern", async () => (await playhead()) === 1);
@@ -333,7 +339,7 @@ try {
   await host("tempo", 140);
   await host("play");
   await until("the host's transport runs it", async () => (await playhead()) === 1 && (await playButton.textContent()) === "With host");
-  await until("at the host's tempo", async () => /140 bpm/.test((await page.locator(".s-seq").textContent()) ?? ""));
+  await until("at the host's tempo", async () => /(^|\D)140\s*bpm/.test(await tempoShown()));
   check("and the button stands aside", await playButton.isDisabled());
   // the playhead moves in step with the transport
   const steps = new Set<number>();
@@ -353,13 +359,13 @@ try {
   await host("stop");
   await until("a stop stops it, and the button is back", async () => (await playhead()) === 0 && (await playButton.textContent()) === "Play beat");
   // told not to follow
-  await page.locator(".transport .chip", { hasText: "Follow" }).click();
+  await beatChip("Follow").click();
   await until("following is a saved setting", async () => (await state()).settings.beat.follow === false);
   await host("play");
   await page.waitForTimeout(150);
   check("and the host's playing doesn't start it", (await playhead()) === 0);
   await host("stop");
-  await page.locator(".transport .chip", { hasText: "Follow" }).click();
+  await beatChip("Follow").click();
   await until("following again", async () => (await state()).settings.beat.follow === true);
   // editing the pattern
   const firstCell = page.locator(".seq-row").nth(2).locator(".cell").nth(1);
@@ -368,15 +374,14 @@ try {
     const b = (await state()).settings.beat;
     return b.preset === null && b.steps[1]?.id === "tss";
   });
-  const presets = page.locator(".presets .chip");
-  await presets.nth(1).click();
+  await page.getByRole("combobox", { name: "Pattern" }).selectOption("Four on the floor");
   await until("an example replaces it, with its tempo", async () => {
     const b = (await state()).settings.beat;
     return b.preset === "Four on the floor" && b.bpm === 122;
   });
-  await page.locator(".transport .chip", { hasText: "Close mic" }).click();
+  await beatChip("Mic FX").click();
   await until("the close mic is a saved setting", async () => (await state()).settings.beat.mic === false);
-  await page.locator(".transport .chip", { hasText: "Close mic" }).click();
+  await beatChip("Mic FX").click();
   await until("and on again", async () => (await state()).settings.beat.mic === true);
   // pads and notes
   const level = () => page.evaluate(() => {
@@ -402,8 +407,8 @@ try {
   const withBeat = (await state()).settings;
   withBeat.beat = { steps: [{ id: "t" }, null, { id: "Pf" }, null], bpm: 77, swing: 0.1, preset: null, mic: false, follow: false };
   await host("restore", JSON.stringify(withBeat));
-  await until("a restore brings its beat", async () => /Your beat \/ 77 bpm/i.test((await page.locator(".s-seq").textContent()) ?? "") && (await page.locator(".seq-row").first().locator(".cell").count()) === 4);
-  check("and its settings", !/\bon\b/.test((await page.locator(".transport .chip", { hasText: "Follow" }).getAttribute("class")) ?? "") && !/\bon\b/.test((await page.locator(".transport .chip", { hasText: "Close mic" }).getAttribute("class")) ?? ""));
+  await until("a restore brings its beat", async () => /Your beat/.test(await pattern()) && /(^|\D)77\s*bpm/.test(await tempoShown()) && (await page.locator(".seq-row").first().locator(".cell").count()) === 4);
+  check("and its settings", !/\bon\b/.test((await beatChip("Follow").getAttribute("class")) ?? "") && !/\bon\b/.test((await beatChip("Mic FX").getAttribute("class")) ?? ""));
   await host("tempo", 120);
   await page.getByRole("radio", { name: /^sing$/i }).click();
   await until("and out of Beatbox", async () => (await state()).settings.mode === "sing");

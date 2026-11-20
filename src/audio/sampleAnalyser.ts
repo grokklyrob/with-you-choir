@@ -1,5 +1,5 @@
 /**
- * The part of `AnalyserNode` the spectrum views use, for the plugin, which has no Web Audio: the
+ * The part of `AnalyserNode` the spectrum views and the level use, for the plugin, which has no Web Audio: the
  * audio thread's samples go in, and `getFloatFrequencyData` follows the Web Audio spec (Blackman
  * window, FFT, smoothing over time, decibels), so the views don't know the difference.
  */
@@ -8,6 +8,7 @@ export interface Analyser {
   readonly fftSize: number;
   readonly frequencyBinCount: number;
   getFloatFrequencyData(out: Float32Array): void;
+  getFloatTimeDomainData(out: Float32Array): void;
 }
 
 export class SampleAnalyser implements Analyser {
@@ -45,6 +46,13 @@ export class SampleAnalyser implements Analyser {
       this.ring[this.at] = samples[i];
       this.at = (this.at + 1) % n;
     }
+  }
+
+  /** The newest samples, oldest first. */
+  getFloatTimeDomainData(out: Float32Array): void {
+    const n = this.fftSize;
+    const count = Math.min(out.length, n);
+    for (let i = 0; i < count; i++) out[i] = this.ring[(this.at + n - count + i) % n];
   }
 
   getFloatFrequencyData(out: Float32Array): void {

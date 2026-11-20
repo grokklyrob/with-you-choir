@@ -53,3 +53,16 @@ test("the newest samples win, however they arrive", () => {
   a.getFloatFrequencyData(out);
   expect(out.indexOf(Math.max(...out))).toBe(Math.round((5000 / SR) * 1024));
 });
+
+test("the waveform is the newest samples, oldest first, as AnalyserNode gives it", () => {
+  const a = new SampleAnalyser(8, 0);
+  a.push(Float32Array.from([1, 2, 3, 4, 5]));
+  a.push(Float32Array.from([6, 7, 8, 9, 10, 11]));
+  const all = new Float32Array(8);
+  a.getFloatTimeDomainData(all);
+  expect([...all]).toEqual([4, 5, 6, 7, 8, 9, 10, 11]);
+  // a shorter buffer gets the newest of them
+  const some = new Float32Array(3);
+  a.getFloatTimeDomainData(some);
+  expect([...some]).toEqual([9, 10, 11]);
+});

@@ -98,7 +98,8 @@ fn the_singer_does_not_allocate() {
 fn the_longest_syllable_does_not_allocate() {
     let seg = |ipa: &str| Segment::new(ipa);
     let cluster: Vec<Segment> = ["s", "p", "ɹ", "t", "k", "l", "m", "f", "θ"].iter().map(|i| seg(i)).collect(); // one past the cap
-    let syl = Syllable { text: "x".into(), onset: cluster.clone(), nucleus: seg("aɪ"), coda: cluster, melisma: None, word_end: true, phrase_end: false };
+    // a triphthong: an on-glide with the onset, the held vowel, an off-glide before the coda
+    let syl = Syllable { text: "x".into(), onset: cluster.clone(), nucleus: seg("uaɪ"), coda: cluster, melisma: None, word_end: true, phrase_end: false, ..Default::default() };
     let mut e = Engine::new(44100.0);
     let mut s = Singer::new();
     let _ = s.set_syllables(syllables_from(&[syl.clone(), syl]));
