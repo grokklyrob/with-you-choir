@@ -593,6 +593,16 @@ pub fn notes(ctx: &Ctx, a: &[String]) -> Result<(), String> {
         tension: Some(0.55),
         ..Default::default()
     });
+    // local experiment: optional per-voice timbre from the melody file
+    // "source": {"tension":0.4,"breathiness":0.2,...}  "artic": {"larynx":-0.8,"epilarynx":0.5,...}
+    if let Some(src) = j.get("source") {
+        let p: SourcePatch = serde_json::from_value(src.clone()).map_err(|e| format!("source: {e}"))?;
+        v.set_source(&p);
+    }
+    if let Some(ar) = j.get("artic") {
+        let p: chimera::anatomy::human::ArticPatch = serde_json::from_value(ar.clone()).map_err(|e| format!("artic: {e}"))?;
+        v.set_articulation(&p, None);
+    }
     let (mut t, mut k, mut end) = (t0, 0usize, 0.0f64);
     let mut phrase: Vec<SungNote> = Vec::new();
     let mut start = t;
