@@ -101,6 +101,8 @@ data, `tools/build-mandarin.ts`), longest phrase first: 银行 is yín háng, �
   Corpus", NeurIPS 2022 Datasets and Benchmarks: only aggregate figures like these come from it).
   At fixed lengths a fast note had no vowel left: 85 % of the vowels under 150 ms after an
   aspirated initial were 12 dB or more under the singer's on the same 296 sentences; now none.
+  A song's first syllable shortens the same way to fit the time before its first beat, so the
+  plan never starts before its time 0 (窗 chuang from a beat at 0.3 s began 13 ms before it).
 - **Erhua:** 一点儿 sings 一 + 点儿, one syllable ending in ɻ; a 儿 that is a word's own syllable
   (女儿, 儿子) stays one.
 - **A vowel-initial syllable** (爱, 安) starts with a soft glottal catch, so it doesn't run into the

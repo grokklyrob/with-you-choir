@@ -90,6 +90,9 @@ const CLOSING_ALVEOLAR: f64 = 0.6;
 const MIN_VOWEL: f64 = 0.05;
 /// a squeezed consonant keeps at least this long (s); a flap is 16 ms
 const MIN_CONSONANT: f64 = 0.012;
+/// A phrase's first movement begins this long before its first segment (s): the planner lays
+/// segments out 60 ms after the plan's start, and a stop's closing begins 1 ms before that.
+const PHRASE_LEAD: f64 = 0.062;
 
 /// Fit the consonants between a vowel and the next one into `span`, the time from the vowel's
 /// beat to the next vowel's (or to the end of a phrase's last note): when they leave the vowel
@@ -270,6 +273,23 @@ pub fn plan_song(notes: &[SungNote], o: &SongOptions) -> Plan {
                     c.vot = c.vot.map(|v| v * f);
                 }
                 starts[k + 1] = times[k + 1] - lead * f;
+            }
+        }
+        // the call's first phrase has only the time before its first beat, and the plan's time 0
+        // is where a render starts. A syllable that leads the beat (`Syllable::voice_lag`)
+        // shortens its consonants to fit, as it does on a fast note: sung 90 ms earlier, 窗
+        // chuang's began 13 ms before time 0 from a beat at 0.3 s, and the start was cut
+        if i == 0 && voice_lag(&notes[0].syl) > 0.0 {
+            let lead = times[0] - starts[0];
+            let cons = total(&onsets[0]) + lead;
+            let room = times[0] - PHRASE_LEAD;
+            if cons > room && room > 0.0 {
+                let f = room / cons;
+                for c in onsets[0].iter_mut() {
+                    c.dur = Some(js_max(MIN_CONSONANT, c.dur.unwrap_or(0.0) * f));
+                    c.vot = c.vot.map(|v| v * f);
+                }
+                starts[0] = times[0] - lead * f;
             }
         }
         for k in i..=j {

@@ -82,6 +82,36 @@ fn the_voice_is_there_on_the_beat_after_an_aspirated_stop() {
     assert!(then > 10.0, "without the lag it was {then:.1} dB under");
 }
 
+/// a song of one note whose beat is `t0` s into the plan: (when its first movement begins, when
+/// its held vowel starts, how long its first segment is)
+fn opening(py: &str, t0: f64) -> (f64, f64, f64) {
+    let p = plan_song(&[SungNote { midi: 57.0, beats: 1.0, syl: mandarin(py) }], &SongOptions { body: "female".into(), bpm: 90.0, t0, vibrato: 0.0, ..Default::default() });
+    let first = p.gestures.iter().map(|g| g.t0 - g.ramp_in).fold(f64::INFINITY, f64::min);
+    let vowel = p.segments.iter().filter(|s| s.kind == "vowel").map(|s| (s.t0, s.t1 - s.t0)).max_by(|a, b| a.1.total_cmp(&b.1)).unwrap().0;
+    (first, vowel, p.segments[0].t1 - p.segments[0].t0)
+}
+
+#[test]
+fn a_song_does_not_start_before_the_plans_time_zero() {
+    // an aspirated affricate and a medial glide from a beat at 0.3 s (`chimera render notes`):
+    // 252 ms of onset and the planner's 62 ms of lead. The plan began at -13 ms, and a render,
+    // which starts at 0, cut the start. Now the consonants shorten to fit (6 %) and the vowel is
+    // still on the beat
+    for py in ["chuang1", "qiang3", "chun1", "qiong2"] {
+        let (first, vowel, initial) = opening(py, 0.3);
+        assert!(first >= 0.0 && first < 0.002, "{py} begins at {first:.4} s");
+        assert!((vowel - 0.3).abs() < 1e-9, "{py}'s vowel starts at {vowel:.4} s");
+        // with room (the app's beat at 0.35 s, or any later one) nothing is shortened
+        let (app, _, at_length) = opening(py, 0.35);
+        assert!((app - 0.037).abs() < 0.001, "{py} begins at {app:.4} s from the app's beat");
+        assert!((opening(py, 1.0).2 - at_length).abs() < 1e-9 && initial < 0.95 * at_length);
+    }
+    // a syllable that says no lag starts where it did
+    let unsaid = |t0: f64| plan_song(&[SungNote { midi: 57.0, beats: 1.0, syl: Syllable { voice_lag: None, ..mandarin("chuang1") } }], &SongOptions { body: "female".into(), bpm: 90.0, t0, vibrato: 0.0, ..Default::default() });
+    let (a, b) = (unsaid(0.15), unsaid(1.0));
+    assert!((a.segments[0].t1 - a.segments[0].t0 - (b.segments[0].t1 - b.segments[0].t0)).abs() < 1e-9);
+}
+
 /// two notes `secs` apart: 他 ta, then 爽 shuang (a fricative, a medial glide, the voice's lag: 173 ms of onset)
 fn pair(secs: f64, share: Option<f64>) -> Plan {
     let next = Syllable { onset_share: share, ..mandarin("shuang3") };
