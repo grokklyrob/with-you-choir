@@ -29,6 +29,8 @@ import { g2p, zh } from "../speech.ts";
 import { hasHan, lyricsToSyllables } from "../../wasm/engine.ts";
 import { sungWords, wordAt, type Melody, type SungWords } from "../../show/words.ts";
 import type { OverlayFn } from "./AnatomyView.tsx";
+import { ArcStage, type StageOpts } from "./ArcStage.tsx";
+import type { HeadLook } from "../render/anatomy3d.ts";
 
 interface ShowFile {
   title: string;
@@ -36,12 +38,15 @@ interface ShowFile {
   bpm?: number;
   downbeat?: number;
   spell?: Record<string, string>;
-  voices: { name: string; tele: string; melody?: string }[];
+  /** "arc": all heads on one shared stage (ArcStage); default "panels": a head per panel */
+  layout?: "panels" | "arc";
+  stage?: StageOpts;
+  voices: { name: string; tele: string; melody?: string; look?: HeadLook; scale?: number; words?: string; turn?: number }[];
 }
 
 interface Loaded {
   show: ShowFile;
-  voices: { name: string; track: TeleTrack; words: SungWords | null }[];
+  voices: { name: string; track: TeleTrack; words: SungWords | null; look?: HeadLook; scale?: number; wordColor?: string; turn?: number }[];
 }
 
 /** the heads as the face screen shows them by default, less the measurement labels */
@@ -90,7 +95,7 @@ export function DuetPage(props: { id: string }) {
           return null;
         }
       });
-      const voices = show.voices.map((v, i) => ({ name: v.name, track: new TeleTrack(teles[i]), words: words[i] }));
+      const voices = show.voices.map((v, i) => ({ name: v.name, track: new TeleTrack(teles[i]), words: words[i], look: v.look, scale: v.scale, wordColor: v.words, turn: v.turn }));
       await transport.load(audio);
       if (live) setLoaded({ show, voices });
     })().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
@@ -118,15 +123,25 @@ export function DuetPage(props: { id: string }) {
     );
   const st = transport?.state ?? { playing: false, time: 0, duration: 0, epoch: 0 };
   const title = loaded?.show.title ?? "Loading…";
+  // `&stage=arc|panels` overrides the show's own layout
+  const params = new URLSearchParams(window.location.search);
+  const arc = (params.get("stage") ?? loaded?.show.layout ?? "panels") === "arc";
+  const manual = params.get("clock") === "manual";
   return (
     <div className="duet">
       <header className="duet-top">
         <span className="wordmark">Chimera</span>
         <span className="duet-title">{title}</span>
       </header>
-      <main className="duet-heads" style={{ "--voices": loaded?.voices.length ?? 2 } as React.CSSProperties}>
-        {loaded && transport ? loaded.voices.map((v, i) => <Head key={i} name={v.name} track={v.track} words={v.words} show={loaded.show} transport={transport} facing={i > 0 && i === loaded.voices.length - 1 ? -1 : 1} />) : <p className="duet-msg">Loading the song…</p>}
-      </main>
+      {arc && loaded && transport ? (
+        <main className="duet-arc">
+          <ArcStage voices={loaded.voices} stage={loaded.show.stage} transport={transport} bpm={loaded.show.bpm} downbeat={loaded.show.downbeat} manual={manual} />
+        </main>
+      ) : (
+        <main className="duet-heads" style={{ "--voices": loaded?.voices.length ?? 2 } as React.CSSProperties}>
+          {loaded && transport ? loaded.voices.map((v, i) => <Head key={i} name={v.name} track={v.track} words={v.words} show={loaded.show} transport={transport} facing={i > 0 && i === loaded.voices.length - 1 ? -1 : 1} />) : <p className="duet-msg">Loading the song…</p>}
+        </main>
+      )}
       <footer className="duet-bar">
         <button className="primary large" disabled={!loaded} onClick={() => (st.playing ? transport?.pause() : transport?.play())}>
           {st.playing ? "Pause" : st.duration > 0 && st.time >= st.duration - 0.05 ? "Again" : "Play"}

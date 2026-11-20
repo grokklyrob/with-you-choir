@@ -123,9 +123,18 @@ export interface Beam3Opts {
   close?: boolean;
 }
 
+/** a point warp in body cm, written into `o` (per-singer head shapes; see Anatomy3D.setLook) */
+export type Warp = (x: number, y: number, z: number, o: Float32Array) => void;
+
 export class Beams {
   readonly group = new THREE.Group();
   private readonly batches: Batch[];
+  /** recolours the palette's colours as they are drawn (a singer's own look); null draws them as given */
+  remap: ((hex: string) => string) | null = null;
+  /** moves every point before it is drawn (a singer's head proportions); null leaves them */
+  warp: Warp | null = null;
+  private wbuf = new Float32Array(3 * 256);
+  private readonly wo = new Float32Array(3);
 
   constructor() {
     this.batches = WIDTHS.map((w) => {
@@ -162,6 +171,8 @@ export class Beams {
   line(a: ArrayLike<number>, n: number, color: string, width: number, o: Beam3Opts = {}): void {
     if (n < 2) return;
     const al = o.alpha ?? 1;
+    if (this.remap) color = this.remap(color);
+    if (this.warp) a = this.warped(a, n);
     this.strokes(a, n, rgb(color), al, this.batch(width), o.close ?? false);
     if (o.hot) this.strokes(a, n, rgb(core(color)), al, this.batch(width * 0.42), o.close ?? false);
   }
@@ -172,8 +183,29 @@ export class Beams {
 
   /** one segment */
   seg(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, color: string, width: number, alpha = 1): void {
+    if (this.remap) color = this.remap(color);
+    if (this.warp) {
+      const o = this.wo;
+      this.warp(x0, y0, z0, o);
+      [x0, y0, z0] = [o[0], o[1], o[2]];
+      this.warp(x1, y1, z1, o);
+      [x1, y1, z1] = [o[0], o[1], o[2]];
+    }
     const [r, g, b] = rgb(color);
     this.batch(width).seg(x0, y0, z0, x1, y1, z1, r * alpha, g * alpha, b * alpha);
+  }
+
+  /** the first n points of a, warped (into a buffer reused until the next call) */
+  private warped(a: ArrayLike<number>, n: number): Float32Array {
+    if (this.wbuf.length < 3 * n) this.wbuf = new Float32Array(Math.max(3 * n, 2 * this.wbuf.length));
+    const b = this.wbuf, o = this.wo, w = this.warp!;
+    for (let i = 0; i < 3 * n; i += 3) {
+      w(a[i], a[i + 1], a[i + 2], o);
+      b[i] = o[0];
+      b[i + 1] = o[1];
+      b[i + 2] = o[2];
+    }
+    return b;
   }
 
   private strokes(a: ArrayLike<number>, n: number, [r, g, b]: [number, number, number], al: number, bt: Batch, close: boolean): void {

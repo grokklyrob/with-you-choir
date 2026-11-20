@@ -2675,6 +2675,23 @@ input[type="range"]::-moz-range-thumb {
   min-height: 0;
 }
 
+/* the shared stage (layout "arc"): one canvas across the page */
+.duet-arc {
+  position: relative;
+  min-height: 0;
+  border: 1px solid var(--line, #133954);
+  overflow: hidden;
+}
+
+.duet-stage,
+.duet-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .duet-head .screen-body {
   min-height: 180px;
 }

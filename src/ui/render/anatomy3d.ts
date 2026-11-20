@@ -219,6 +219,10 @@ interface Rest {
   chin: Float32Array;
   eyes: V3[];
   eyeR: number;
+  /** landmark heights (body cm) for per-singer proportions: chin, jaw hinge, eyes, brow ridge */
+  marks: { chin: number; hinge: number; eye: number; brow: number };
+  /** the ear lobes' lowest point, each side (gold drips hang from here) */
+  lobes: V3[];
 }
 
 /** how much of the jaw's rotation a point of the face's skin follows (rest pose, body cm) */
@@ -608,7 +612,10 @@ function buildRest(model: VoiceModel): Rest {
   // eyes: the 2D view draws one on the midline; here they sit either side of the nose
   const eyeC = B(6.15, 15.35);
   const center = new THREE.Vector3(0.3 * k, (head.y0 + head.y1) / 2, 0);
-  return { model, head, condyle, lipHalf, center, shell, fixed, jaw, chin, eyes: [[eyeC.x, eyeC.y, 3.15 * k], [eyeC.x, eyeC.y, -3.15 * k]], eyeR: 1.05 * k };
+  const lobe = B(-3.95, 9.55), lobeS = head.at(lobe.y);
+  const lobeZ = (lobeS ? sideZ(lobeS, lobe.x) : 6 * k) + 0.45 * k;
+  const marks = { chin: By(3.6), hinge: condyle.y, eye: eyeC.y, brow: By(16.3) };
+  return { model, head, condyle, lipHalf, center, shell, fixed, jaw, chin, eyes: [[eyeC.x, eyeC.y, 3.15 * k], [eyeC.x, eyeC.y, -3.15 * k]], eyeR: 1.05 * k, marks, lobes: [[lobe.x, lobe.y, lobeZ], [lobe.x, lobe.y, -lobeZ]] };
 }
 
 // ------------------------------------------------------------------ the renderer
@@ -629,6 +636,33 @@ interface Echo {
   lines: { a: Float32Array; color: string }[];
 }
 const ECHO_AGES = [0.09, 0.06, 0.03];
+
+/**
+ * A singer's own look on a shared stage (show.json `voices[].look`): palette colours swapped for
+ * the singer's, head proportions as a smooth warp of the whole head (articulators included, so the
+ * mouth still lines up), and optional gold drips from the ear lobes.
+ */
+export interface HeadShape {
+  /** cranium width above the eyes, fraction (+0.1 = 10% wider) */
+  skull?: number;
+  /** jaw width between chin and hinge, fraction */
+  jaw?: number;
+  /** brow ridge pushed forward, body cm at the male's size */
+  brow?: number;
+  /** lower face (below the eyes) longer, fraction */
+  face?: number;
+  /** neck below the chin longer, fraction */
+  neck?: number;
+}
+export type PaletteKey = "blue" | "blueMid" | "blueDim" | "green" | "red" | "pink" | "white" | "amber";
+export interface HeadLook {
+  /** the vector palette's roles recoloured (see colors.ts V): blue* = skull/shell, green = tongue,
+   *  pink = lips, red = jaw line, white = velum/eyes, amber = sound */
+  palette?: Partial<Record<PaletteKey, string>>;
+  shape?: HeadShape;
+  /** a colour for drips hanging from the ear lobes (the bust's gold), or none */
+  drips?: string | null;
+}
 
 export class Anatomy3D {
   readonly scene = new THREE.Scene();
@@ -676,6 +710,49 @@ export class Anatomy3D {
     this.beams.dispose();
   }
 
+  /** the group holding the drawn head (to place it on a shared stage) */
+  get root(): THREE.Group {
+    return this.beams.group;
+  }
+
+  private look: HeadLook = {};
+  private warpFor: Rest | null = null;
+  setLook(look: HeadLook | undefined): void {
+    this.look = look ?? {};
+    const map = new Map<string, string>();
+    for (const [key, hex] of Object.entries(this.look.palette ?? {})) if (hex) map.set(V[key as PaletteKey].toLowerCase(), hex);
+    this.beams.remap = map.size ? (c) => map.get(c.toLowerCase()) ?? c : null;
+    this.warpFor = null;
+  }
+
+  /** the proportions' warp for this body (null: none), built once per body */
+  private setWarp(rest: Rest, k: number): void {
+    if (this.warpFor === rest) return;
+    this.warpFor = rest;
+    const sh = this.look.shape;
+    if (!sh || !Object.values(sh).some((v) => v)) {
+      this.beams.warp = null;
+      return;
+    }
+    const { chin, hinge, eye, brow } = rest.marks;
+    const skull = sh.skull ?? 0, jaw = sh.jaw ?? 0, browF = (sh.brow ?? 0) * k, face = sh.face ?? 0, neck = sh.neck ?? 0;
+    const front = rest.eyes[0][0] - 1.5 * k;
+    this.beams.warp = (x, y, z, o) => {
+      // widths: the cranium above the eyes, the jaw between chin and hinge
+      let zf = 1 + skull * smooth(hinge, eye + 1.5 * k, y);
+      zf *= 1 + jaw * smooth(chin - 1.5 * k, chin + 1.5 * k, y) * (1 - smooth(hinge - 0.5 * k, hinge + 2 * k, y));
+      // the brow ridge: a band at brow height, on the face
+      const bx = browF * Math.exp(-(((y - brow) / (1.1 * k)) ** 2)) * smooth(front - 2 * k, front + 1 * k, x);
+      // lengths: the lower face stretches down from the eyes, the neck down from the chin
+      let yy = y;
+      if (y < eye) yy = eye - (eye - y) * (1 + face);
+      if (y < chin) yy -= neck * (chin - y);
+      o[0] = x + bx;
+      o[1] = yy;
+      o[2] = z * zf;
+    };
+  }
+
   /** forget the motion so far (a replay jumped): the face's springs and held-note time, the
    *  outline echoes, the airflow's particle trails and the vocal folds' strobe phase */
   resetMotion(): void {
@@ -721,7 +798,12 @@ export class Anatomy3D {
   }
 
   /** body point → CSS px on the canvas */
+  private readonly wp = new Float32Array(3);
   project(x: number, y: number, z: number): [number, number] {
+    if (this.beams.warp) {
+      this.beams.warp(x, y, z, this.wp);
+      [x, y, z] = [this.wp[0], this.wp[1], this.wp[2]];
+    }
     const v = this.v3.set(x, y, z).applyMatrix4(this.beams.group.matrixWorld).project(this.camera);
     return [((v.x + 1) / 2) * this.w, ((1 - v.y) / 2) * this.h];
   }
@@ -761,6 +843,7 @@ export class Anatomy3D {
     const rest = this.restFor(model);
     const k = model.tract.scale;
     const face = this.face;
+    this.setWarp(rest, k);
     this.headPose(rest, k);
     const phi = jawAngle(model, a.jaw);
     const C = rest.condyle;
@@ -874,7 +957,31 @@ export class Anatomy3D {
     if (tele) this.drawTurbulence(model, f, tele);
     this.caliper = null;
     if (view.calipers) this.drawCaliper(f);
+    if (this.look.drips) this.drawDrips(rest, k, this.look.drips);
     B.end();
+  }
+
+  /** molten drips from the ear lobes, as on Robert's bust: a wavy run down and a bead that swells */
+  private drawDrips(rest: Rest, k: number, color: string): void {
+    const P = this.tmp;
+    for (const [x0, y0, z0] of rest.lobes) {
+      for (const [dz, len, ph] of [[0, 3.4, 0], [0.35, 2.2, 1.7]] as const) {
+        P.reset();
+        const z = z0 + Math.sign(z0) * dz * k;
+        for (let i = 0; i <= 14; i++) {
+          const u = i / 14;
+          P.p(x0 + 0.18 * k * Math.sin(5 * u + ph + 0.6 * this.clock), y0 - u * len * k, z);
+        }
+        this.beams.poly(P, color, 1.6, { hot: true });
+        const bead = 0.32 * k * (1 + 0.15 * Math.sin(2.1 * this.clock + ph)), yb = y0 - len * k - bead;
+        P.reset();
+        for (let i = 0; i <= 16; i++) {
+          const a = (i / 16) * Math.PI * 2;
+          P.p(x0 + bead * Math.cos(a), yb + 1.25 * bead * Math.sin(a), z);
+        }
+        this.beams.poly(P, color, 1.3, { hot: true });
+      }
+    }
   }
 
   private nearestEcho(t: number): Echo | null {
