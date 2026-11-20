@@ -63,8 +63,16 @@ Early: a CLAP, VST3 and AU instrument for macOS, and CLAP and VST3 for Windows, 
 a webview, in a window you can resize. On Linux (CLAP and VST3) the same UI opens in your web browser.
 MIDI notes sing the lyrics, one syllable per note (Sing); play the posture you've set (Play); say
 the next line of text (Speak); or play mouth drums and hum, with a beat that follows the host's tempo
-(Beatbox). Everything saves with the project, and the voice parameters can be automated. On a Mac, with
-Xcode's command line tools as well as the above:
+(Beatbox). Everything saves with the project, and the voice parameters can be automated.
+
+On a Mac, the signed and notarised release installs with one command (or download it from
+[chimera.audio/plugin](https://chimera.audio/plugin/)):
+
+```sh
+curl -fsSL https://chimera.audio/install.sh | sh
+```
+
+To build it yourself, with Xcode's command line tools as well as the above:
 
 ```sh
 crates/chimera-plugin/macos/build.sh --install
@@ -77,7 +85,7 @@ crates/chimera-plugin/macos/update.sh
 ```
 
 On Windows, in Git Bash with Rust's MSVC toolchain: `crates/chimera-plugin/windows/build.sh --install`.
-Builds aren't signed yet. See [docs/plugin.md](docs/plugin.md).
+Only the macOS build is released so far. See [docs/plugin.md](docs/plugin.md), "Releases".
 
 Offline renders and measurement:
 
