@@ -74,7 +74,12 @@ fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT INT TERM
 curl -fsSL "$manifest" -o "$tmp/manifest.json" || die "couldn't download $manifest"
-field() { plutil -extract "$1" raw -o - "$tmp/manifest.json" 2> /dev/null || die "the manifest has no $1"; }
+# a string from the manifest. plutil's raw output is macOS 12's; its XML is on 11 too
+field() {
+  v=$(plutil -extract "$1" xml1 -o - "$tmp/manifest.json" 2> /dev/null | sed -n 's:.*<string>\(.*\)</string>.*:\1:p' | sed 's/&amp;/\&/g') || true
+  [ -n "$v" ] || die "the manifest has no $1"
+  say "$v"
+}
 version=$(field version)
 url=$(field platforms.macos.url)
 sha=$(field platforms.macos.sha256)
@@ -93,12 +98,23 @@ for f in $chosen; do
   codesign --verify --strict "$src" 2> /dev/null || die "$(basename "$src")'s signature doesn't verify: nothing was installed"
 done
 
+# Each new bundle is copied in beside the old one first (hidden, and not named like a plugin, so a
+# host scanning meanwhile ignores it); only when every copy has worked are the old ones swapped out.
+# A failed copy leaves the installed plugins as they were. A host with the old one loaded keeps it
+# until it restarts: removing a bundle doesn't disturb a binary in use, overwriting one would.
+staged() { say "$(dirname "$(dest "$1")")/.$(basename "$(dest "$1")").installing"; }
+unstage() { for f in $chosen; do rm -rf "$(staged "$f")"; done; }
+trap 'unstage; rm -rf "$tmp"' EXIT INT TERM
+for f in $chosen; do
+  mkdir -p "$(dirname "$(dest "$f")")"
+  rm -rf "$(staged "$f")"
+  ditto "$(bundle "$f")" "$(staged "$f")" || die "couldn't copy $(basename "$(dest "$f")") into $(dirname "$(dest "$f")"): nothing was changed"
+done
 say "CHIMERA $version is installed:"
 for f in $chosen; do
   d=$(dest "$f")
-  mkdir -p "$(dirname "$d")"
   rm -rf "$d"
-  ditto "$(bundle "$f")" "$d"
+  mv "$(staged "$f")" "$d"
   say "  $d"
 done
 refresh_au

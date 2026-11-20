@@ -34,6 +34,18 @@ check "--formats clap installs the CLAP" test -d "${all[0]}"
 check "and only the CLAP" test ! -e "${all[1]}" -a ! -e "${all[2]}"
 installer --uninstall
 
+# an update that can't finish leaves what was installed as it was: the VST3 folder read-only, so its
+# copy fails after the CLAP's has been made
+installer
+echo old > "${all[0]}/old"
+chmod a-w "$plugins/VST3"
+check "an update that can't copy fails" bash -c '! HOME="$0" CHIMERA_MANIFEST="$1" sh public/install.sh 2> /dev/null' "$home" "$manifest"
+chmod u+w "$plugins/VST3"
+check "and leaves the CLAP it had" test -f "${all[0]}/old"
+check "and the VST3" test -d "${all[1]}"
+check "and nothing half-copied" bash -c '! ls -a "$0"/*/ | grep -q installing' "$plugins"
+installer --uninstall
+
 # a download that isn't what the manifest says installs nothing
 sed 's/"sha256": "[0-9a-f]*"/"sha256": "0000"/' out/release/manifest.json > "$home/bad.json"
 if HOME="$home" CHIMERA_MANIFEST="file://$home/bad.json" sh public/install.sh 2> "$home/err"; then

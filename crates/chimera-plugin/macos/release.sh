@@ -81,6 +81,15 @@ plutil -lint "$out/manifest.json" > /dev/null 2>&1 || { echo "manifest.json isn'
 ls -l "$out"
 
 if [ -n "$publish" ]; then
+  # sign.sh does nothing without its secrets (a fork's pull request), and an ad hoc signature passes
+  # codesign --verify: a release has to show the Developer ID and Apple's stapled ticket itself
+  for b in clap vst3 component; do
+    bundle="target/bundled/CHIMERA.$b"
+    signature=$(codesign -dvv "$bundle" 2>&1) || true
+    grep -q '^Authority=Developer ID Application:' <<< "$signature" ||
+      { echo "$bundle isn't signed with a Developer ID: not publishing" >&2; exit 1; }
+    xcrun stapler validate "$bundle" > /dev/null || { echo "$bundle has no notarisation ticket: not publishing" >&2; exit 1; }
+  done
   gh release create "$tag" "$out/CHIMERA-macos.zip" "$out/SHA256SUMS" "$out/manifest.json" \
     --repo "$repo" --title "CHIMERA plugin $version" --notes "CHIMERA $version as a CLAP, VST3 and AU instrument for macOS 11 or later (Apple silicon and Intel), signed and notarised.
 
