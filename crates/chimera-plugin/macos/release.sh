@@ -77,7 +77,9 @@ cat > "$out/manifest.json" <<EOF
   }
 }
 EOF
-plutil -lint "$out/manifest.json" > /dev/null 2>&1 || { echo "manifest.json isn't valid JSON" >&2; exit 1; }
+# (plutil -lint takes JSON for an invalid property list; install.sh reads it with JSON.parse too)
+osascript -l JavaScript -e 'function run(a) { ObjC.import("Foundation"); JSON.parse(ObjC.unwrap($.NSString.stringWithContentsOfFileEncodingError(a[0], $.NSUTF8StringEncoding, null))); return "manifest.json parses" }' "$PWD/$out/manifest.json" ||
+  { echo "manifest.json isn't valid JSON" >&2; exit 1; }
 ls -l "$out"
 
 if [ -n "$publish" ]; then

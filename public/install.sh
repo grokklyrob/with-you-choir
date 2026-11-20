@@ -74,9 +74,19 @@ fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT INT TERM
 curl -fsSL "$manifest" -o "$tmp/manifest.json" || die "couldn't download $manifest"
-# a string from the manifest. plutil's raw output is macOS 12's; its XML is on 11 too
+# a string from the manifest, by its path ("platforms.macos.url"): JSON.parse in JavaScript for
+# Automation, on every macOS since 10.10 (plutil reads JSON only on recent ones)
+cat > "$tmp/field.js" << 'JS'
+function run(argv) {
+  ObjC.import("Foundation");
+  const text = ObjC.unwrap($.NSString.stringWithContentsOfFileEncodingError(argv[0], $.NSUTF8StringEncoding, null));
+  let v = JSON.parse(text);
+  for (const k of argv[1].split(".")) v = v == null ? undefined : v[k];
+  return v == null ? "" : String(v);
+}
+JS
 field() {
-  v=$(plutil -extract "$1" xml1 -o - "$tmp/manifest.json" 2> /dev/null | sed -n 's:.*<string>\(.*\)</string>.*:\1:p' | sed 's/&amp;/\&/g') || true
+  v=$(osascript -l JavaScript "$tmp/field.js" "$tmp/manifest.json" "$1" 2> /dev/null) || true
   [ -n "$v" ] || die "the manifest has no $1"
   say "$v"
 }
