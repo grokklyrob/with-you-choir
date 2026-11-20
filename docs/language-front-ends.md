@@ -89,15 +89,18 @@ data, `tools/build-mandarin.ts`), longest phrase first: 银行 is yín háng, �
 - **Timing:** j zh z with short frication, n m f long enough to hear, -n 70 ms and -ng 80 ms.
 - **The voice on the beat:** each initial says how long the voice lags it (`voiceLag`: the 90 ms
   aspiration, a 15-18 ms burst, a fricative's 27-34 ms release), and the song planner sings the
-  initial that much earlier. Against 20 real singers' sung Mandarin (the synth singing their
-  notes, 296 sentences) the voice came in 110 ms after the beat behind an aspirated initial and
-  34-42 ms behind the others, where theirs is on it; now 14-18 ms, `tests/voice_on_beat.rs`.
+  initial that much earlier. Against the 20 singers of M4Singer (Zhang et al., NeurIPS 2022
+  Datasets and Benchmarks; the synth singing their notes, 296 sentences) the voice came in 110 ms
+  after the beat behind an aspirated initial and 34-42 ms behind the others, where theirs is on
+  it; now 14-18 ms, `tests/voice_on_beat.rs`.
 - **Consonants shorten with the notes:** what comes before a sung vowel (the coda before it, the
   initial and medial, the voice's lag) takes at most 55 % of the time since the vowel before
-  (`onsetShare`) and shortens in proportion on a faster note. Real singers' initials are a share
-  of that time at any tempo (the median 0.39-0.43, three quarters under 0.50-0.55). At fixed
-  lengths a fast note had no vowel left: 85 % of the vowels under 150 ms after an aspirated
-  initial were 12 dB or more under the singer's on the same 296 sentences; now none.
+  (`onsetShare`) and shortens in proportion on a faster note. M4Singer's singers' initials are a
+  share of that time at any tempo (the median 0.39-0.43, three quarters under 0.50-0.55; Zhang et
+  al., "M4Singer: A Multi-Style, Multi-Singer and Musical Score Provided Mandarin Singing
+  Corpus", NeurIPS 2022 Datasets and Benchmarks: only aggregate figures like these come from it).
+  At fixed lengths a fast note had no vowel left: 85 % of the vowels under 150 ms after an
+  aspirated initial were 12 dB or more under the singer's on the same 296 sentences; now none.
 - **Erhua:** 一点儿 sings 一 + 点儿, one syllable ending in ɻ; a 儿 that is a word's own syllable
   (女儿, 儿子) stays one.
 - **A vowel-initial syllable** (爱, 安) starts with a soft glottal catch, so it doesn't run into the

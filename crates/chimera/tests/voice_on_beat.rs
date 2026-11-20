@@ -1,7 +1,7 @@
 //! A sung vowel's voice comes in on the beat. The song planner puts the vowel's segment on the
 //! beat, and the voice starts after it by whatever follows the onset's last consonant: a stop's
-//! aspiration (90 ms in Mandarin), a burst, a fricative's release. Against 20 real singers' sung
-//! Mandarin the voice was 35-45 ms late after unaspirated stops and fricatives and 110 ms late
+//! aspiration (90 ms in Mandarin), a burst, a fricative's release. Against M4Singer's 20 singers
+//! (Zhang et al., NeurIPS 2022 Datasets and Benchmarks) the voice was 35-45 ms late after unaspirated stops and fricatives and 110 ms late
 //! after aspirated ones, a large part of a short note's vowel. A front end that says how long its
 //! voice lags (`Syllable::voice_lag`, Mandarin's does) has the vowel start that long before the
 //! beat; one that doesn't is sung as before.

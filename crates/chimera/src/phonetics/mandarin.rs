@@ -171,10 +171,15 @@ const MANDARIN_VOT: f64 = 0.09;
 
 /// The consonants before a sung vowel take at most this share of the time since the vowel before
 /// (`Syllable::onset_share`). Real singers' initials are a share of that time whatever the tempo
-/// (114,000 syllable pairs of 20 singers: the median 0.39-0.43 between 50 and 400 ms, three
-/// quarters under 0.50-0.55), 60 ms long on the fastest notes and 160 on slow ones. At a fixed
-/// length they left a fast note no vowel: after an aspirated initial, 85 % of the vowels under
-/// 150 ms were 12 dB or more under the singer's.
+/// (114,000 syllable pairs of M4Singer's 20 singers: the median 0.39-0.43 between 50 and 400 ms,
+/// three quarters under 0.50-0.55), 60 ms long on the fastest notes and 160 on slow ones. At a
+/// fixed length they left a fast note no vowel: after an aspirated initial, 85 % of the vowels
+/// under 150 ms were 12 dB or more under the singer's.
+///
+/// M4Singer: Zhang et al., "M4Singer: A Multi-Style, Multi-Singer and Musical Score Provided
+/// Mandarin Singing Corpus", NeurIPS 2022 Datasets and Benchmarks (CC BY-NC-SA 4.0). Only
+/// aggregate figures like these come from it: none of its audio, annotations or alignments is
+/// in this repository.
 const ONSET_SHARE: f64 = 0.55;
 
 /// How long after an initial's own segment the voice starts (s): the aspiration; an unaspirated
