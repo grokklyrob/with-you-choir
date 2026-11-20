@@ -24,8 +24,9 @@ source "$here/$system/host-ui.sh"
 # Where the tabs' middles are in the page: from its right edge, as the top bar keeps them there, and
 # from its top (measured in the UI harness). The page is scaled below LAYOUT_MIN (page_zoom in
 # src/bridge.rs), and since it's drawn scaled, text included, these hold at any window size.
-PLAY_FROM_RIGHT=811
-BEATBOX_FROM_RIGHT=656
+# tools/plugin-e2e.ts checks them against the page, so a change to the top bar fails there first.
+PLAY_FROM_RIGHT=508
+BEATBOX_FROM_RIGHT=354
 TAB_Y=26
 LAYOUT_W=1120
 LAYOUT_H=800

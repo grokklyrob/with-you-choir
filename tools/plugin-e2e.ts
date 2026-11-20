@@ -7,7 +7,7 @@
  * Usage: bun run build && cargo build -p chimera-plugin --release --example ui_harness && bun tools/plugin-e2e.ts [outdir]
  */
 import { chromium } from "playwright-core";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 
 const PORT = 8549;
@@ -80,6 +80,18 @@ try {
   check("no link away from the plugin", (await page.locator(".repo-link").count()) === 0);
   check("no Web MIDI button", (await page.locator("button.midi").count()) === 0);
   check("no demo songs", (await page.locator(".demo-songs").count()) === 0);
+  check("no tune bar: the host plays", (await page.locator(".right-sing .action-bar").count()) === 0);
+  // the REAPER test clicks tabs where host-test/run.sh says they are (from the page's right edge)
+  const runSh = readFileSync("crates/chimera-plugin/host-test/run.sh", "utf8");
+  for (const [name, key] of [["Play", "PLAY_FROM_RIGHT"], ["Beatbox", "BEATBOX_FROM_RIGHT"]]) {
+    const want = Number(runSh.match(new RegExp(`^${key}=(\\d+)`, "m"))?.[1]);
+    const wantY = Number(runSh.match(/^TAB_Y=(\d+)/m)?.[1]);
+    const at = await page.getByRole("radio", { name }).evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      return { fromRight: innerWidth - (r.x + r.width / 2), y: r.y + r.height / 2 };
+    });
+    check(`the ${name} tab is where the host test clicks`, Math.abs(at.fromRight - want) < 4 && Math.abs(at.y - wantY) < 4, `${at.fromRight.toFixed(0)} from the right, ${at.y.toFixed(0)} down; run.sh says ${want}, ${wantY}`);
+  }
   await until("telemetry reaches the page", async () => (await tele())?.clock);
   const c0 = (await tele())!.clock;
   await until("the voice clock moves", async () => (await tele())!.clock > c0);

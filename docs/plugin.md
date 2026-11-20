@@ -10,7 +10,8 @@ AU on macOS, under the repo's MIT licence. Windows and Linux came after (see "Sy
 
 - **Modes:** Sing, Play, Speak and Beatbox. Bestiary stays out for now: it needs its own MIDI mapping
   and persisted state.
-- **No demo songs and no Web MIDI.** The host gives the MIDI.
+- **No tunes, Record video, language chooser or Web MIDI.** The host plays the notes. Latin script is
+  read as English; other scripts go to their own front ends, as on the website.
 - **The sound lives in Rust.** A plugin's window is usually closed while it plays, so nothing the
   sound depends on may live in the page: lyrics, cursor, body, posture, and every note decision.
   The page is a view that sends commands.
@@ -192,7 +193,7 @@ breathy, rough, fry, glide, ring, restart lyrics. IDs are permanent once release
 Everything else is one `#[persist]` JSON field, `Settings`: lyrics, body, mode, posture (the
 articulators changed from neutral, and `tip_free`), voiced, the Play-mode pitch, the start syllable,
 and a version number. nih-plug restores it before `initialize`, which rebuilds `Core` from it, clears
-`Pending` and bumps the state revision. The cursor, held notes and the Hold breath toggle aren't
+`Pending` and bumps the state revision. The cursor, held notes and Play's Breathe hold aren't
 saved.
 
 Body isn't a host parameter: changing it rebuilds the airway and ends the sung notes.
@@ -420,7 +421,7 @@ to the newest key held. Stopping the sequencer clears the score, so a hum still 
 **Close mic.** The website's chain is Web Audio nodes (low shelf +9 dB at 120 Hz, peak +3 dB at 3.5 kHz,
 compressor at -28 dB, 5:1, make-up), which a plugin doesn't have, and much of a beatbox's weight comes
 from it. `CloseMic` is the same chain in Rust on the audio thread, per sample and allocation-free, used
-only in Beatbox with Close Mic on (saved, on by default). It isn't bit-identical to the browser's: the
+only in Beatbox with Mic FX on (saved, on by default). It isn't bit-identical to the browser's: the
 browser's compressor looks 6 ms ahead and this one doesn't, so a hit's first peak gets the whole make-up
 gain. The default pattern peaked at +5 dBFS, and a host's bounce at 0 dB Gain clipped, so the chain ends in
 a peak limiter at -1 dBFS (instant attack, 50 ms release). It changes nothing that stays under that,
