@@ -65,8 +65,8 @@ MIDI notes sing the lyrics, one syllable per note (Sing); play the posture you'v
 the next line of text (Speak); or play mouth drums and hum, with a beat that follows the host's tempo
 (Beatbox). Everything saves with the project, and the voice parameters can be automated.
 
-On a Mac, the signed and notarised release installs with one command (or download it from
-[chimera.audio/plugin](https://chimera.audio/plugin/)):
+On a Mac (signed and notarised) or on Linux (x86_64), the release installs with one command (or
+download it from [chimera.audio/plugin](https://chimera.audio/plugin/)):
 
 ```sh
 curl -fsSL https://chimera.audio/install.sh | sh
@@ -84,8 +84,9 @@ Or, with GitHub's `gh` logged in, install CI's newest build without building any
 crates/chimera-plugin/macos/update.sh
 ```
 
-On Windows, in Git Bash with Rust's MSVC toolchain: `crates/chimera-plugin/windows/build.sh --install`.
-Only the macOS build is released so far. See [docs/plugin.md](docs/plugin.md), "Releases".
+To build it on Linux: `crates/chimera-plugin/linux/build.sh --install`. On Windows, in Git Bash with
+Rust's MSVC toolchain: `crates/chimera-plugin/windows/build.sh --install`. The Windows build isn't
+released yet. See [docs/plugin.md](docs/plugin.md), "Releases".
 
 Offline renders and measurement:
 
