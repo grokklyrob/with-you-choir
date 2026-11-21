@@ -1,0 +1,135 @@
+{
+  "title": "Ethereal Choir: With You",
+  "audio": "mix.mp3",
+  "bpm": 131,
+  "downbeat": 0,
+  "voices": [
+    {
+      "name": "Bass",
+      "tele": "bass.tele",
+      "melody": "bass.json",
+      "scale": 1.06,
+      "words": "#f2c464",
+      "turn": -38,
+      "look": {
+        "palette": {
+          "blue": "#d9a441",
+          "blueMid": "#b8842c",
+          "blueDim": "#7d5a1f",
+          "white": "#fff0cc",
+          "green": "#f6ead2",
+          "pink": "#f0cf8e",
+          "red": "#9a3a26",
+          "amber": "#ffcf6b"
+        },
+        "shape": {
+          "skull": 0.1,
+          "jaw": 0.2,
+          "brow": 0.7,
+          "face": 0.02,
+          "neck": 0.0
+        },
+        "drips": "#e8b44a"
+      }
+    },
+    {
+      "name": "Alto",
+      "tele": "alto.tele",
+      "melody": "alto.json",
+      "scale": 0.82,
+      "words": "#f3eee4",
+      "turn": 34,
+      "look": {
+        "palette": {
+          "blue": "#e9e4da",
+          "blueMid": "#bcb5a8",
+          "blueDim": "#78736a",
+          "white": "#ffffff",
+          "green": "#e8b24a",
+          "pink": "#d9a441",
+          "red": "#b8842c",
+          "amber": "#ffcf6b"
+        },
+        "shape": {
+          "skull": 0.06,
+          "jaw": 0.04,
+          "brow": 0.15,
+          "face": -0.03,
+          "neck": 0.0
+        },
+        "drips": "#d9a441"
+      },
+      "offset": [
+        0,
+        -9.5,
+        0
+      ]
+    },
+    {
+      "name": "Soprano",
+      "tele": "soprano.tele",
+      "melody": "soprano.json",
+      "scale": 0.98,
+      "words": "#dce8ff",
+      "turn": 40,
+      "look": {
+        "palette": {
+          "blue": "#dbe7ff",
+          "blueMid": "#a6b9de",
+          "blueDim": "#5d7096",
+          "white": "#ffffff",
+          "green": "#f3c45a",
+          "pink": "#ffd27a",
+          "red": "#d9a441",
+          "amber": "#ffe08a"
+        },
+        "shape": {
+          "skull": -0.07,
+          "jaw": -0.14,
+          "brow": -0.2,
+          "face": 0.08,
+          "neck": 0.3
+        },
+        "drips": null
+      }
+    }
+  ],
+  "layout": "arc",
+  "stage": {
+    "background": "#08090d",
+    "stars": 1600,
+    "starColor": "#dfe6ff",
+    "spacing": 27,
+    "curve": 8,
+    "orbitDeg": 11,
+    "distance": 112,
+    "loop": 0,
+    "sky": "starburst",
+    "starburst": {
+      "core": [
+        0,
+        0.25
+      ],
+      "size": 1,
+      "letterbox": 0,
+      "pulse": 0.6,
+      "warm": "#e8b44a",
+      "cool": "#a6b9de"
+    }
+  },
+  "overlay": {
+    "play": "Play Song",
+    "credit": "With you by R.Stevens",
+    "lyricsVoice": "Soprano",
+    "phrases": [
+      "with you, with you, with you",
+      "in the circle of life",
+      "I want to download into you",
+      "I want to download into you",
+      "with you, with you",
+      "I want to download into you",
+      "in the circle of life"
+    ],
+    "headWords": false
+  }
+}

@@ -1,0 +1,1053 @@
+{
+ "bpm": 131,
+ "lyrics": "with you with you with you , in the circle of life , I want to download into you , I want to download into you with you with you , I want to download into you , in the circle of life",
+ "syllables": [
+  {
+   "text": "with",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "with",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "with",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": true
+  },
+  {
+   "text": "in",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 0
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "the",
+   "onset": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ə",
+    "stress": 0
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "cir",
+   "onset": [
+    {
+     "ipa": "s",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɝ",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "cle",
+   "onset": [
+    {
+     "ipa": "k",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ə",
+    "stress": 0
+   },
+   "coda": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "of",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ʌ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "v",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "life",
+   "onset": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "aɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "f",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": true
+  },
+  {
+   "text": "I",
+   "onset": [],
+   "nucleus": {
+    "ipa": "aɪ",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "want",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɑ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    },
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "down",
+   "onset": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "aʊ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "load",
+   "onset": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "oʊ",
+    "stress": 2
+   },
+   "coda": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "in",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 0
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": true
+  },
+  {
+   "text": "I",
+   "onset": [],
+   "nucleus": {
+    "ipa": "aɪ",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "want",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɑ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    },
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "down",
+   "onset": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "aʊ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "load",
+   "onset": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "oʊ",
+    "stress": 2
+   },
+   "coda": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "in",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 0
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "with",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "with",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": true
+  },
+  {
+   "text": "I",
+   "onset": [],
+   "nucleus": {
+    "ipa": "aɪ",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "want",
+   "onset": [
+    {
+     "ipa": "w",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɑ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    },
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "down",
+   "onset": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "aʊ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "load",
+   "onset": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "oʊ",
+    "stress": 2
+   },
+   "coda": [
+    {
+     "ipa": "d",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "in",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "to",
+   "onset": [
+    {
+     "ipa": "t",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 0
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "you",
+   "onset": [
+    {
+     "ipa": "j",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "u",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": true
+  },
+  {
+   "text": "in",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ɪ",
+    "stress": 0
+   },
+   "coda": [
+    {
+     "ipa": "n",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "the",
+   "onset": [
+    {
+     "ipa": "ð",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ə",
+    "stress": 0
+   },
+   "coda": [],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "cir",
+   "onset": [
+    {
+     "ipa": "s",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ɝ",
+    "stress": 1
+   },
+   "coda": [],
+   "wordEnd": false,
+   "phraseEnd": false
+  },
+  {
+   "text": "cle",
+   "onset": [
+    {
+     "ipa": "k",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "ə",
+    "stress": 0
+   },
+   "coda": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "of",
+   "onset": [],
+   "nucleus": {
+    "ipa": "ʌ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "v",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  },
+  {
+   "text": "life",
+   "onset": [
+    {
+     "ipa": "l",
+     "stress": 0
+    }
+   ],
+   "nucleus": {
+    "ipa": "aɪ",
+    "stress": 1
+   },
+   "coda": [
+    {
+     "ipa": "f",
+     "stress": 0
+    }
+   ],
+   "wordEnd": true,
+   "phraseEnd": false
+  }
+ ],
+ "notes": [
+  [
+   0,
+   4
+  ],
+  [
+   72,
+   1.5
+  ],
+  [
+   69,
+   1.5
+  ],
+  [
+   72,
+   1.5
+  ],
+  [
+   69,
+   1.5
+  ],
+  [
+   72,
+   1.5
+  ],
+  [
+   69,
+   6.5
+  ],
+  [
+   0,
+   2
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   65,
+   2
+  ],
+  [
+   70,
+   3
+  ],
+  [
+   69,
+   2
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   65,
+   4
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   65,
+   1
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   69,
+   2
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   65,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   65,
+   3
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   72,
+   1
+  ],
+  [
+   70,
+   1
+  ],
+  [
+   69,
+   1
+  ],
+  [
+   72,
+   2
+  ],
+  [
+   70,
+   1
+  ],
+  [
+   69,
+   1
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   69,
+   4
+  ],
+  [
+   65,
+   1
+  ],
+  [
+   65,
+   3
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   69,
+   4
+  ],
+  [
+   0,
+   7
+  ],
+  [
+   70,
+   1
+  ],
+  [
+   70,
+   1
+  ],
+  [
+   69,
+   1
+  ],
+  [
+   70,
+   3
+  ],
+  [
+   69,
+   2
+  ],
+  [
+   67,
+   1
+  ],
+  [
+   65,
+   1
+  ],
+  [
+   65,
+   6
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   64,
+   2
+  ],
+  [
+   65,
+   2
+  ],
+  [
+   70,
+   4
+  ],
+  [
+   69,
+   3
+  ],
+  [
+   67,
+   2
+  ],
+  [
+   65,
+   11
+  ],
+  [
+   0,
+   12
+  ]
+ ],
+ "vibrato": 42,
+ "artic": {
+  "epilarynx": 0.25,
+  "lipProt": 0.2
+ },
+ "source": {
+  "tension": 0.45,
+  "brightness": 0.55,
+  "breathiness": 0.15
+ }
+}
