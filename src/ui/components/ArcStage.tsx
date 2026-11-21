@@ -9,6 +9,10 @@
  *              "spacing": 34, "curve": 9, "orbitDeg": 16, "distance": 150, "loop": 0 }
  *   "voices": [{ …, "look": { "palette": {…}, "shape": {…}, "drips": "#d9a441" },
  *                "scale": 1.04, "words": "#f0c060", "turn": 20 }]
+ *   "stage": { "sky": "starburst", "starburst": { "core": [0, 0.23], "letterbox": 0.04, "pulse": 0.6 } }
+ *   (sky "stars", the default, is the star field; "starburst" is the procedural sky in
+ *   render/starburst.ts; `&sky=stars|starburst` overrides it)
+ *   voices[].offset: [x, y, z] moves a head from its arc slot (stage units; a head is ~30 tall)
  * `loop` is the camera's cycle in seconds (0: the song's length, so it comes round as the song
  * ends). `turn` (deg) turns a head from facing the camera, + towards its right.
  *
@@ -18,6 +22,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Anatomy3D, type HeadLook } from "../render/anatomy3d.ts";
+import { Starburst, type StarburstOpts } from "../render/starburst.ts";
 import { Glow } from "../render/vector.ts";
 import { getModel } from "../useModel.ts";
 import { VoiceModel } from "../analysis.ts";
@@ -38,6 +43,8 @@ export interface StageOpts {
   orbitDeg?: number;
   distance?: number;
   loop?: number;
+  sky?: "stars" | "starburst";
+  starburst?: StarburstOpts;
 }
 export interface StageVoice {
   name: string;
@@ -47,6 +54,7 @@ export interface StageVoice {
   scale?: number;
   wordColor?: string;
   turn?: number;
+  offset?: [number, number, number];
 }
 
 /** a #rrggbb colour as given (the stage draws untransformed sRGB, as the heads' beams do) */
@@ -93,8 +101,22 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
     scene.fog = fog;
     const camera = new THREE.PerspectiveCamera(24, 1, 5, 6000);
 
+    const skyParam = new URLSearchParams(location.search).get("sky");
+    const sky = skyParam === "stars" || skyParam === "starburst" ? skyParam : (st.sky ?? "stars");
+    const burst = sky === "starburst" ? new Starburst(st.starburst) : null;
+    if (burst) scene.add(burst.mesh);
+    // the singers' loudness, for the core's pulse: each voice's output level, normalised per voice
+    const levels = voices.map((v) => {
+      const tr = v.track, n = tr.frames, out = new Float32Array(n);
+      let peak = 1e-6;
+      for (let i = 0; i < n; i++) peak = Math.max(peak, (out[i] = tr.message(i).t.outRms));
+      for (let i = 0; i < n; i++) out[i] = Math.min(1, out[i] / peak);
+      return out;
+    });
+    let ampS = 0;
+
     // the star field: a shell of points well behind and around the singers
-    const nStars = st.stars ?? 1400;
+    const nStars = burst ? 0 : (st.stars ?? 1400);
     if (nStars > 0) {
       const pos = new Float32Array(nStars * 3), col = new Float32Array(nStars * 3);
       const sc = raw(st.starColor ?? "#cfd8ff");
@@ -127,7 +149,8 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
       offset.position.copy(center).multiplyScalar(-1);
       offset.add(r.root);
       slot.add(offset);
-      slot.position.set(u * spacing * (n - 1) * 0.5, 0, curve * u * u);
+      const off = v.offset ?? [0, 0, 0];
+      slot.position.set(u * spacing * (n - 1) * 0.5 + off[0], off[1], curve * u * u + off[2]);
       const s = v.scale ?? 1;
       slot.scale.setScalar(s);
       // body +x is the face: turn it to the camera, then a little toward the arc's middle and by `turn`
@@ -176,6 +199,7 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       for (const hd of heads) hd.r.resize(w, h);
+      burst?.resize(Math.round(w * dpr), Math.round(h * dpr));
     };
     const ro = new ResizeObserver(fit);
     ro.observe(wrap);
@@ -207,6 +231,17 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
         r.update(model, f, a, tele, VIEW, dt);
         return { f, a };
       });
+      if (burst) {
+        let a = 0;
+        voices.forEach((v, i) => (a += levels[i][v.track.indexAt(t)] ?? 0));
+        a = Math.min(1, a / Math.max(1, voices.length * 0.6));
+        if (!playing()) a = 0;
+        // fast attack, slow release
+        const k = 1 - Math.exp(-dt / (a > ampS ? 0.06 : 0.35));
+        ampS += (a - ampS) * k;
+        const az = Math.atan2(camera.position.x - target.x, camera.position.z - target.z);
+        burst.update(props.manual ? t : performance.now() / 1000, ampS * (st.starburst?.pulse ?? 0.6), az);
+      }
       const t1 = performance.now();
       gl.render(scene, camera);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -253,6 +288,7 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
       ro.disconnect();
       delete window.__stageStep;
       for (const hd of heads) hd.r.dispose();
+      burst?.dispose();
       gl.dispose();
       gl.forceContextLoss();
     };

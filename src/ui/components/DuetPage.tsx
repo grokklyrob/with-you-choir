@@ -41,12 +41,12 @@ interface ShowFile {
   /** "arc": all heads on one shared stage (ArcStage); default "panels": a head per panel */
   layout?: "panels" | "arc";
   stage?: StageOpts;
-  voices: { name: string; tele: string; melody?: string; look?: HeadLook; scale?: number; words?: string; turn?: number }[];
+  voices: { name: string; tele: string; melody?: string; look?: HeadLook; scale?: number; words?: string; turn?: number; offset?: [number, number, number] }[];
 }
 
 interface Loaded {
   show: ShowFile;
-  voices: { name: string; track: TeleTrack; words: SungWords | null; look?: HeadLook; scale?: number; wordColor?: string; turn?: number }[];
+  voices: { name: string; track: TeleTrack; words: SungWords | null; look?: HeadLook; scale?: number; wordColor?: string; turn?: number; offset?: [number, number, number] }[];
 }
 
 /** the heads as the face screen shows them by default, less the measurement labels */
@@ -95,7 +95,7 @@ export function DuetPage(props: { id: string }) {
           return null;
         }
       });
-      const voices = show.voices.map((v, i) => ({ name: v.name, track: new TeleTrack(teles[i]), words: words[i], look: v.look, scale: v.scale, wordColor: v.words, turn: v.turn }));
+      const voices = show.voices.map((v, i) => ({ name: v.name, track: new TeleTrack(teles[i]), words: words[i], look: v.look, scale: v.scale, wordColor: v.words, turn: v.turn, offset: v.offset }));
       await transport.load(audio);
       if (live) setLoaded({ show, voices });
     })().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
