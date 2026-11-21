@@ -19,7 +19,7 @@
  * `&clock=manual` stops the playback clock and exposes `window.__stageStep(t, dt)`, which draws the
  * frame at song time t (for frame-exact captures); `window.__stagePerf` holds frame timings.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { Anatomy3D, type HeadLook } from "../render/anatomy3d.ts";
 import { Starburst, type StarburstOpts } from "../render/starburst.ts";
@@ -80,8 +80,22 @@ declare global {
   }
 }
 
-export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; transport: Transport; bpm?: number; downbeat?: number; manual?: boolean }) {
+export function ArcStage(props: {
+  voices: StageVoice[];
+  stage?: StageOpts;
+  transport: Transport;
+  bpm?: number;
+  downbeat?: number;
+  manual?: boolean;
+  /** the floating syllable at each mouth (default on) */
+  headWords?: boolean;
+  /** called every drawn frame with the stage's song time (the manual clock's, when manual) */
+  onFrame?: (t: number, playing: boolean) => void;
+  children?: ReactNode;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onFrameRef = useRef(props.onFrame);
+  onFrameRef.current = props.onFrame;
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,7 +171,7 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
       slot.rotation.y = -Math.PI / 2 - u * 0.18 + ((v.turn ?? 0) * Math.PI) / 180;
       scene.add(slot);
       const side: 1 | -1 = u < -0.01 ? -1 : 1;
-      const overlay: OverlayFn | undefined = v.words ? mouthWords(() => wordAt(v.words!, time()), v.wordColor ?? V.green, side) : undefined;
+      const overlay: OverlayFn | undefined = v.words && props.headWords !== false ? mouthWords(() => wordAt(v.words!, time()), v.wordColor ?? V.green, side) : undefined;
       return { v, r, model, slot, side, overlay, u, epoch: -1 };
     });
 
@@ -261,6 +275,7 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
         hd.overlay(ctx, fv, hd.model, f, a, { w: wLane, h, dt });
       });
       glow.apply(canvas, ctx, dpr);
+      onFrameRef.current?.(t, playing());
       const t2 = performance.now();
       perf.frames++;
       perf.updateMs += t1 - t0;
@@ -299,6 +314,7 @@ export function ArcStage(props: { voices: StageVoice[]; stage?: StageOpts; trans
   return (
     <div ref={wrapRef} className="duet-stage">
       <canvas ref={canvasRef} role="img" aria-label="The singers on one stage, in 3D" />
+      {props.children}
     </div>
   );
 }

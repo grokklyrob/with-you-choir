@@ -30,7 +30,8 @@ const DuetPage = lazy(() => import("./components/DuetPage.tsx").then((m) => ({ d
 
 /** the show to play, from `?show=<id>` (a plain folder name under public/shows) */
 function showId(): string | null {
-  const id = new URLSearchParams(window.location.search).get("show");
+  // a build for one show's site sets VITE_DEFAULT_SHOW, so its root opens straight onto the show
+  const id = new URLSearchParams(window.location.search).get("show") ?? (import.meta.env.VITE_DEFAULT_SHOW as string | undefined) ?? null;
   return id && /^[\w-]+$/.test(id) ? id : null;
 }
 

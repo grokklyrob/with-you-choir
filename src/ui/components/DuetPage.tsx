@@ -30,6 +30,7 @@ import { hasHan, lyricsToSyllables } from "../../wasm/engine.ts";
 import { sungWords, wordAt, type Melody, type SungWords } from "../../show/words.ts";
 import type { OverlayFn } from "./AnatomyView.tsx";
 import { ArcStage, type StageOpts } from "./ArcStage.tsx";
+import { lyricPhrases, lyricsUpdater, PlayPill, type OverlayOpts, type Phrase } from "./StageOverlay.tsx";
 import type { HeadLook } from "../render/anatomy3d.ts";
 
 interface ShowFile {
@@ -41,11 +42,14 @@ interface ShowFile {
   /** "arc": all heads on one shared stage (ArcStage); default "panels": a head per panel */
   layout?: "panels" | "arc";
   stage?: StageOpts;
+  /** arc layout: Play Song pill, credit and the lyric line (StageOverlay.tsx) */
+  overlay?: OverlayOpts;
   voices: { name: string; tele: string; melody?: string; look?: HeadLook; scale?: number; words?: string; turn?: number; offset?: [number, number, number] }[];
 }
 
 interface Loaded {
   show: ShowFile;
+  phrases: Phrase[] | null;
   voices: { name: string; track: TeleTrack; words: SungWords | null; look?: HeadLook; scale?: number; wordColor?: string; turn?: number; offset?: [number, number, number] }[];
 }
 
@@ -67,6 +71,16 @@ export function DuetPage(props: { id: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  // the lyric line is written straight into the DOM each frame (no re-render per frame)
+  const lyricsRef = useRef<HTMLDivElement>(null);
+  const updRef = useRef<{ el: HTMLElement; ph: Phrase[]; f: (t: number, p: boolean) => void } | null>(null);
+  const phrasesRef = useRef<Phrase[] | null>(null);
+  const onFrame = useRef((t: number, playing: boolean) => {
+    const el = lyricsRef.current, ph = phrasesRef.current;
+    if (!el || !ph) return;
+    if (!updRef.current || updRef.current.el !== el || updRef.current.ph !== ph) updRef.current = { el, ph, f: lyricsUpdater(el, ph) };
+    updRef.current.f(t, playing);
+  }).current;
 
   useEffect(() => {
     const t = new Transport();
@@ -81,6 +95,7 @@ export function DuetPage(props: { id: string }) {
     (async () => {
       const show = (await (await fetchOk(base + "show.json")).json()) as ShowFile;
       if (!show.voices?.length || !show.audio) throw new Error("show.json needs audio and voices");
+      if (show.title) document.title = show.title;
       const [audio, ...teles] = await Promise.all([fetchOk(base + show.audio).then((r) => r.arrayBuffer()), ...show.voices.map((v) => fetchOk(base + v.tele).then((r) => r.arrayBuffer()))]);
       // the words: syllables as the CLI splits them (the pronouncing dictionary first, as it does)
       const melodies = await Promise.all(show.voices.map((v) => (v.melody ? fetchOk(base + v.melody).then((r) => r.json() as Promise<Melody>) : null)));
@@ -96,8 +111,23 @@ export function DuetPage(props: { id: string }) {
         }
       });
       const voices = show.voices.map((v, i) => ({ name: v.name, track: new TeleTrack(teles[i]), words: words[i], look: v.look, scale: v.scale, wordColor: v.words, turn: v.turn, offset: v.offset }));
+      // the lyric line: the lead voice's words, grouped into the show's phrases
+      let phrases: Phrase[] | null = null;
+      if (show.overlay) {
+        const want = show.overlay.lyricsVoice?.toLowerCase();
+        let li = show.voices.findIndex((v, i) => melodies[i] && v.name.toLowerCase() === want);
+        if (li < 0) li = melodies.findIndex(Boolean);
+        const m = li >= 0 ? melodies[li] : null;
+        if (m) {
+          try {
+            phrases = lyricPhrases(m, m.syllables ?? lyricsToSyllables(m.lyrics), show.overlay.phrases);
+          } catch (e) {
+            console.warn("duet: no lyric line:", e);
+          }
+        }
+      }
       await transport.load(audio);
-      if (live) setLoaded({ show, voices });
+      if (live) setLoaded({ show, voices, phrases });
     })().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
     return () => {
       live = false;
@@ -121,12 +151,15 @@ export function DuetPage(props: { id: string }) {
         <p className="duet-msg error">This show could not load: {error}</p>
       </div>
     );
+  phrasesRef.current = loaded?.phrases ?? null;
   const st = transport?.state ?? { playing: false, time: 0, duration: 0, epoch: 0 };
   const title = loaded?.show.title ?? "Loading…";
   // `&stage=arc|panels` overrides the show's own layout
   const params = new URLSearchParams(window.location.search);
   const arc = (params.get("stage") ?? loaded?.show.layout ?? "panels") === "arc";
   const manual = params.get("clock") === "manual";
+  const overlay = arc ? loaded?.show.overlay : undefined;
+  const atEnd = st.duration > 0 && st.time >= st.duration - 0.05;
   return (
     <div className="duet">
       <header className="duet-top">
@@ -135,14 +168,33 @@ export function DuetPage(props: { id: string }) {
       </header>
       {arc && loaded && transport ? (
         <main className="duet-arc">
-          <ArcStage voices={loaded.voices} stage={loaded.show.stage} transport={transport} bpm={loaded.show.bpm} downbeat={loaded.show.downbeat} manual={manual} />
+          <ArcStage
+            voices={loaded.voices}
+            stage={loaded.show.stage}
+            transport={transport}
+            bpm={loaded.show.bpm}
+            downbeat={loaded.show.downbeat}
+            manual={manual}
+            headWords={overlay ? !!overlay.headWords : true}
+            onFrame={onFrame}
+          >
+            {overlay && (
+              <div className="stage-overlay">
+                <div className="stage-lyrics" ref={lyricsRef} aria-hidden="true" />
+                <div className="stage-corner">
+                  <PlayPill playing={st.playing && !atEnd} disabled={!loaded} label={overlay.play ?? "Play Song"} onClick={() => (st.playing ? transport.pause() : transport.play())} />
+                  {overlay.credit && <div className="stage-credit">{overlay.credit}</div>}
+                </div>
+              </div>
+            )}
+          </ArcStage>
         </main>
       ) : (
         <main className="duet-heads" style={{ "--voices": loaded?.voices.length ?? 2 } as React.CSSProperties}>
           {loaded && transport ? loaded.voices.map((v, i) => <Head key={i} name={v.name} track={v.track} words={v.words} show={loaded.show} transport={transport} facing={i > 0 && i === loaded.voices.length - 1 ? -1 : 1} />) : <p className="duet-msg">Loading the song…</p>}
         </main>
       )}
-      <footer className="duet-bar">
+      <footer className="duet-bar" hidden={!!overlay}>
         <button className="primary large" disabled={!loaded} onClick={() => (st.playing ? transport?.pause() : transport?.play())}>
           {st.playing ? "Pause" : st.duration > 0 && st.time >= st.duration - 0.05 ? "Again" : "Play"}
         </button>

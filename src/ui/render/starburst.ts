@@ -8,7 +8,7 @@
  * Options (`"stage": { "starburst": { … } }`, all optional):
  *   core: [x, y]   the core's centre, in frame heights from the middle (default [0, 0.23])
  *   size: 1        the corona's scale
- *   letterbox: 0   bar height, as a fraction of the frame height (top and bottom)
+ *   letterbox: 0   bar height, as a fraction of the frame height: one for both, or [top, bottom]
  *   pulse: 0.6     how much the core swells with the singers' loudness (0: steady)
  *   warm, cool     the rim tints (#rrggbb); default a gold and a pale blue
  */
@@ -17,7 +17,8 @@ import * as THREE from "three";
 export interface StarburstOpts {
   core?: [number, number];
   size?: number;
-  letterbox?: number;
+  /** one height for both bars, or [top, bottom] */
+  letterbox?: number | [number, number];
   pulse?: number;
   warm?: string;
   cool?: string;
@@ -36,7 +37,8 @@ void main() { gl_Position = vec4(position.xy, 0.9999, 1.0); }
 const FRAG = /* glsl */ `
 precision highp float;
 uniform vec2 uRes;
-uniform float uTime, uAmp, uPan, uLetterbox, uSize;
+uniform float uTime, uAmp, uPan, uSize;
+uniform vec2 uLetterbox;
 uniform vec2 uCore;
 uniform vec3 uWarm, uCool;
 
@@ -194,7 +196,7 @@ void main() {
   col += (h21(fc + fract(t * 7.13) * 911.0) - 0.5) * 0.055;
   col = max(col, 0.0);
   float yy = fc.y / uRes.y;
-  if (yy < uLetterbox || yy > 1.0 - uLetterbox) col = vec3(0.0);
+  if (yy < uLetterbox.y || yy > 1.0 - uLetterbox.x) col = vec3(0.0);
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -211,7 +213,7 @@ export class Starburst {
         uTime: { value: 0 },
         uAmp: { value: 0 },
         uPan: { value: 0 },
-        uLetterbox: { value: o.letterbox ?? 0 },
+        uLetterbox: { value: new THREE.Vector2(...(typeof o.letterbox === "number" ? [o.letterbox, o.letterbox] : (o.letterbox ?? [0, 0]))) },
         uSize: { value: o.size ?? 1 },
         uCore: { value: new THREE.Vector2(...(o.core ?? [0, 0.23])) },
         uWarm: { value: hex(o.warm ?? "", [0.95, 0.74, 0.36]) },
