@@ -6,7 +6,8 @@
  * optional letterbox. Everything is procedural (no textures); the cost is one quad.
  *
  * Options (`"stage": { "starburst": { … } }`, all optional):
- *   core: [x, y]   the core's centre, in frame heights from the middle (default [0, 0.23])
+ *   core: [x, y]   the core's centre, in frame heights from the middle (default [0, 0.23]); the arc
+ *                  stage overrides it to sit above an odd-sized choir's middle singer
  *   size: 1        the corona's scale
  *   letterbox: 0   bar height, as a fraction of the frame height: one for both, or [top, bottom]
  *   pulse: 0.6     how much the core swells with the singers' loudness (0: steady)
@@ -75,6 +76,9 @@ vec2 spikes(vec2 d, float n, float rot, float seed, float len, float wid, float 
     float da = ((u - c) / n) * TAU + bend;
     da = mod(da + 0.5 * TAU, TAU) - 0.5 * TAU;
     float L = len * uSize * (0.05 + 0.15 * h.y * h.y + 0.26 * step(0.86, h.z) * h.y);
+    // shorter downwards, so the light shaft (and whoever stands in it) stays clear
+    float dirY = sin((c / n - 0.5) * TAU - rot);
+    L *= 1.0 - 0.5 * smoothstep(0.15, 0.9, -dirY);
     L *= 1.0 + 0.07 * sin(uTime * 0.37 + id) + 0.06 * uAmp;
     float t = clamp((r - r0) / L, 0.0, 1.0);
     // ink-like: fat at the root, tapering to a needle, with notches along the edge
@@ -97,7 +101,7 @@ void main() {
   float aa = 1.4 / uRes.y;
   float t = uTime;
 
-  vec2 core = uCore + vec2(uPan * 0.12, 0.0);
+  vec2 core = uCore;
   vec2 d = p - core;
   float r = length(d);
   float amp = uAmp;
@@ -169,7 +173,7 @@ void main() {
   float px = p.x + uPan * 0.25;
   float ax = clamp(abs(px) / (0.5 * A), 0.0, 1.0);
   float side = sign(px);
-  float yb = p.y + 0.5;
+  float yb = (p.y + 0.5) / clamp(A / 1.6, 0.5, 1.0); // a narrow frame gets lower ridges
   if (yb < 0.75) {
     float far = 0.08 + 0.42 * pow(smoothstep(0.1, 1.0, ax), 1.2) + 0.09 * fbm(vec2(px * 5.0 + side * 9.0, 2.0)) - 0.03;
     if (yb < far) col = mix(col, vec3(0.03, 0.033, 0.042) + 0.35 * haze * vec3(0.5, 0.48, 0.45), 0.8);
@@ -186,7 +190,7 @@ void main() {
       float crest = exp(-depth * 70.0) * (0.5 + 0.5 * vnoise(vec2(px * 40.0, 3.0)));
       float wet = pow(vnoise(vec2(px * 60.0 + tex * 6.0, yb * 7.0)), 5.0) * exp(-depth * 5.0);
       float sheen = pow(clamp(tex * 1.6 - 0.45, 0.0, 1.0), 4.0) * 0.6;
-      rock += light * (crest * 0.7 + wet * 1.5 + sheen * 0.2) * mix(vec3(1.0, 0.94, 0.85), uCool, 0.25 + 0.3 * tex);
+      rock += light * (crest * 0.6 + wet * 1.1 + sheen * 0.16) * mix(vec3(1.0, 0.94, 0.85), uCool, 0.25 + 0.3 * tex);
       col = mix(col, rock, m);
     }
   }
@@ -204,7 +208,11 @@ void main() {
 export class Starburst {
   readonly mesh: THREE.Mesh;
   private readonly mat: THREE.ShaderMaterial;
+  private readonly size: number;
+  private readonly core: [number, number];
   constructor(o: StarburstOpts = {}) {
+    this.size = o.size ?? 1;
+    this.core = o.core ?? [0, 0.23];
     this.mat = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
@@ -232,8 +240,12 @@ export class Starburst {
     (this.mat.uniforms.uRes.value as THREE.Vector2).set(w, h);
   }
   /** t: seconds; amp: 0…1 loudness (already scaled by the pulse option); pan: the camera's azimuth (rad) */
-  update(t: number, amp: number, pan: number): void {
+  update(t: number, amp: number, pan: number, core?: [number, number], room = 1, aspect = 16 / 9): void {
     const u = this.mat.uniforms;
+    // the corona scales with the room above the middle singer and with a narrow frame's width
+    u.uSize.value = this.size * Math.min(1.15, Math.max(0.35, room * 0.92), Math.max(0.35, aspect / 1.45));
+    if (core) (u.uCore.value as THREE.Vector2).set(core[0], Math.min(core[1], 0.5 - 0.08));
+    else (u.uCore.value as THREE.Vector2).set(...this.core);
     u.uTime.value = t;
     u.uAmp.value = amp;
     u.uPan.value = pan;

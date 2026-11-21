@@ -43,6 +43,10 @@ export interface StageOpts {
   orbitDeg?: number;
   distance?: number;
   loop?: number;
+  /** NDC limits the heads keep to over the camera move (defaults x 0.93, top 0.94, bottom 0.8) */
+  /** raises the camera's aim (stage units), lowering the singers in the frame */
+  lift?: number;
+  fit?: { x?: number; top?: number; bottom?: number };
   sky?: "stars" | "starburst";
   starburst?: StarburstOpts;
 }
@@ -172,8 +176,13 @@ export function ArcStage(props: {
       scene.add(slot);
       const side: 1 | -1 = u < -0.01 ? -1 : 1;
       const overlay: OverlayFn | undefined = v.words && props.headWords !== false ? mouthWords(() => wordAt(v.words!, time()), v.wordColor ?? V.green, side) : undefined;
-      return { v, r, model, slot, side, overlay, u, epoch: -1 };
+      return { v, r, model, slot, side, overlay, u, off, epoch: -1 };
     });
+    // a narrow screen draws the singers closer together (they may overlap a little in portrait)
+    const layoutSlots = (aspect: number) => {
+      const squeeze = Math.min(1, Math.max(0.5, aspect / 1.6));
+      for (const hd of heads) hd.slot.position.x = hd.u * spacing * squeeze * (n - 1) * 0.5 + hd.off[0];
+    };
 
     const duration = () => transport.state.duration || 60;
     let manualT = 0;
@@ -186,19 +195,74 @@ export function ArcStage(props: {
     };
 
     // the camera: a slow drift across the arc (azimuth), a breath of dolly and height, period = the loop
-    const target = new THREE.Vector3(0, 0, curve * 0.4);
-    const placeCamera = (t: number) => {
+    // `lift` raises what the camera looks at, so the singers sit lower in the frame (sky above them)
+    const target = new THREE.Vector3(0, st.lift ?? 0, curve * 0.4);
+    // `fitK` scales the camera distance so every head stays in frame over the whole camera move
+    let fitK = 1;
+    const phaseAt = (t: number) => {
       const T = st.loop || duration();
-      const p = (2 * Math.PI * (t % T)) / T;
+      return (2 * Math.PI * (t % T)) / T;
+    };
+    const placeCamera = (t: number) => placeAt(phaseAt(t), fitK);
+    const placeAt = (p: number, k: number) => {
       const az = ((st.orbitDeg ?? 16) * Math.PI) / 180 * Math.sin(p);
       const el = 0.07 + 0.035 * Math.sin(2 * p + 0.6);
-      const d = (st.distance ?? 150) * (1 + 0.06 * Math.cos(p));
+      const d = (st.distance ?? 150) * k * (1 + 0.06 * Math.cos(p));
       camera.position.set(target.x + d * Math.sin(az) * Math.cos(el), target.y + 1.5 + d * Math.sin(el), target.z + d * Math.cos(az) * Math.cos(el));
       camera.lookAt(target.x, target.y + 0.5 * Math.sin(p), target.z);
       camera.updateMatrixWorld(true);
       fog.near = d - 20;
       fog.far = d + 90;
     };
+
+    // the frame the heads must stay inside (NDC): the sides, the top, and above the lyric line
+    // (top is low: the sky above the singers is the starburst's)
+    const FIT = { x: st.fit?.x ?? 0.93, top: st.fit?.top ?? 0.5, bottom: st.fit?.bottom ?? 0.8 };
+    let boxes: THREE.Box3[] | null = null;
+    const corner = new THREE.Vector3();
+    // the heads' screen extent over the whole camera move, aimed at `lift` alone
+    const extentAt = (k: number) => {
+      const y0 = target.y;
+      target.y = st.lift ?? 0;
+      let mx = 0, top = -9, bot = 9;
+      for (let j = 0; j < 36; j++) {
+        placeAt((2 * Math.PI * j) / 36, k);
+        for (const b of boxes!)
+          for (let c = 0; c < 8; c++) {
+            corner.set(c & 1 ? b.max.x : b.min.x, c & 2 ? b.max.y : b.min.y, c & 4 ? b.max.z : b.min.z).project(camera);
+            mx = Math.max(mx, Math.abs(corner.x));
+            top = Math.max(top, corner.y);
+            bot = Math.min(bot, corner.y);
+          }
+      }
+      target.y = y0;
+      return { mx, top, bot };
+    };
+    // fits when the width does and the height fits the band (the aim then centres it)
+    const fitsAt = (k: number) => {
+      const e = extentAt(k);
+      return e.mx <= FIT.x && e.top - e.bot <= FIT.top + FIT.bottom;
+    };
+    const fitCamera = () => {
+      if (!boxes) return;
+      scene.updateMatrixWorld(true);
+      boxes = heads.map((hd) => new THREE.Box3().setFromObject(hd.slot));
+      let lo = 0.4, hi = 8;
+      if (!fitsAt(hi)) hi = 20;
+      for (let i = 0; i < 18; i++) {
+        const mid = (lo + hi) / 2;
+        if (fitsAt(mid)) hi = mid;
+        else lo = mid;
+      }
+      fitK = hi;
+      // aim so the band's slack is shared above and below (NDC y shifts by -Δ / (d·tan(fov/2)))
+      const e = extentAt(fitK);
+      const o = (FIT.top - e.top + (-FIT.bottom - e.bot)) / 2;
+      target.y = (st.lift ?? 0) - o * (st.distance ?? 150) * fitK * Math.tan((camera.fov * Math.PI) / 360);
+      (window as unknown as { __stageFit?: unknown }).__stageFit = { k: fitK, boxes: boxes.map((b) => [b.min.toArray(), b.max.toArray()]) };
+    };
+    // where the alto (the middle head) tops out on screen, for the sky's core
+    const crownV = new THREE.Vector3();
 
     let w = 0, h = 0, dpr = 1;
     const fit = () => {
@@ -213,6 +277,8 @@ export function ArcStage(props: {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       for (const hd of heads) hd.r.resize(w, h);
+      layoutSlots(w / h);
+      fitCamera();
       burst?.resize(Math.round(w * dpr), Math.round(h * dpr));
     };
     const ro = new ResizeObserver(fit);
@@ -254,7 +320,18 @@ export function ArcStage(props: {
         const k = 1 - Math.exp(-dt / (a > ampS ? 0.06 : 0.35));
         ampS += (a - ampS) * k;
         const az = Math.atan2(camera.position.x - target.x, camera.position.z - target.z);
-        burst.update(props.manual ? t : performance.now() / 1000, ampS * (st.starburst?.pulse ?? 0.6), az);
+        // the core sits above the middle singer's crown, the corona sized to the room up there
+        let core: [number, number] | undefined;
+        let room = 1;
+        if (boxes && n % 2 === 1) {
+          const b = boxes[Math.floor((n - 1) / 2)];
+          crownV.set((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2).project(camera);
+          const top = crownV.y * 0.5, x = (crownV.x * 0.5 * w) / h; // frame heights from the middle
+          const space = 0.5 - top;
+          core = [x, top + 0.58 * space];
+          room = space / 0.47;
+        }
+        burst.update(props.manual ? t : performance.now() / 1000, ampS * (st.starburst?.pulse ?? 0.6), az, core, room, w / h);
       }
       const t1 = performance.now();
       gl.render(scene, camera);
@@ -275,6 +352,10 @@ export function ArcStage(props: {
         hd.overlay(ctx, fv, hd.model, f, a, { w: wLane, h, dt });
       });
       glow.apply(canvas, ctx, dpr);
+      if (!boxes) {
+        boxes = [];
+        fitCamera();
+      }
       onFrameRef.current?.(t, playing());
       const t2 = performance.now();
       perf.frames++;

@@ -2965,3 +2965,39 @@ html.in-browser .resize-grip {
 .duet-bar[hidden] {
   display: none;
 }
+
+/* an overlay show fills the window: no header, no frame, the stage edge to edge */
+.duet.duet-full {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #08090d;
+}
+
+.duet-full .duet-arc {
+  border: none;
+}
+
+.duet-full .stage-lyrics {
+  bottom: max(3.2%, 18px, env(safe-area-inset-bottom));
+}
+
+.duet-full .stage-corner {
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+/* narrow screens: the lyric line rides above the Play pill */
+@container (max-width: 720px) {
+  .stage-lyrics {
+    left: 4%;
+    right: 4%;
+    white-space: normal;
+  }
+  .duet-full .stage-lyrics {
+    bottom: 84px;
+  }
+}

@@ -161,11 +161,13 @@ export function DuetPage(props: { id: string }) {
   const overlay = arc ? loaded?.show.overlay : undefined;
   const atEnd = st.duration > 0 && st.time >= st.duration - 0.05;
   return (
-    <div className="duet">
-      <header className="duet-top">
-        <span className="wordmark">Chimera</span>
-        <span className="duet-title">{title}</span>
-      </header>
+    <div className={overlay ? "duet duet-full" : "duet"}>
+      {!overlay && (
+        <header className="duet-top">
+          <span className="wordmark">Chimera</span>
+          <span className="duet-title">{title}</span>
+        </header>
+      )}
       {arc && loaded && transport ? (
         <main className="duet-arc">
           <ArcStage
